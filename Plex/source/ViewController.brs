@@ -77,23 +77,19 @@ Function createViewController() As Object
 
     ' Stuff the controller into the global object
     m.ViewController = controller
-    controller.myplex = createMyPlexManager(controller)
 
     ' Initialize things that run in the background
     InitWebServer(controller)
     controller.GdmAdvertiser = createGDMAdvertiser(controller)
     controller.AudioPlayer = createAudioPlayer(controller)
     AnalyticsTracker()
+    MyPlexManager()
 
     return controller
 End Function
 
 Function GetViewController()
     return m.ViewController
-End Function
-
-Function GetMyPlexManager()
-    return GetViewController().myplex
 End Function
 
 Function vcCreateHomeScreen()
@@ -572,7 +568,6 @@ Sub vcShow()
     ' Clean up some references on the way out
     AnalyticsTracker().Cleanup()
     m.Home = invalid
-    m.myplex = invalid
     m.GdmAdvertiser = invalid
     m.WebServer = invalid
     m.AudioPlayer = invalid

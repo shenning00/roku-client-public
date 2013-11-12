@@ -52,9 +52,9 @@ Sub AddAccountHeaders(transferObj, token=invalid)
         transferObj.AddHeader("X-Plex-Token", token)
     end if
 
-    myplex = GetMyPlexManager()
-    if myplex.Username <> invalid then
-        transferObj.AddHeader("X-Plex-Username", myplex.Username)
+    username = MyPlexManager().Username
+    if username <> invalid then
+        transferObj.AddHeader("X-Plex-Username", username)
     end if
 End Sub
 

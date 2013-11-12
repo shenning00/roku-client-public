@@ -49,7 +49,7 @@ Function photoPlayerHandleMessage(msg) As Boolean
             ' Send an analytics event
             amountPlayed = m.playbackTimer.GetElapsedSeconds()
             Debug("Sending analytics event, appear to have watched slideshow for " + tostr(amountPlayed) + " seconds")
-            m.ViewController.Analytics.TrackEvent("Playback", firstOf(m.Item.ContentType, "photo"), m.Item.mediaContainerIdentifier, amountPlayed)
+            AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "photo"), m.Item.mediaContainerIdentifier, amountPlayed)
 
             m.ViewController.PopScreen(m)
         else if msg.isPlaybackPosition() then

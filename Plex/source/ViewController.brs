@@ -83,7 +83,7 @@ Function createViewController() As Object
     InitWebServer(controller)
     controller.GdmAdvertiser = createGDMAdvertiser(controller)
     controller.AudioPlayer = createAudioPlayer(controller)
-    controller.Analytics = createAnalyticsTracker()
+    AnalyticsTracker()
 
     return controller
 End Function
@@ -397,7 +397,7 @@ End Sub
 Sub vcPushScreen(screen)
     m.AssignScreenID(screen)
     screenName = firstOf(screen.ScreenName, type(screen.Screen))
-    m.Analytics.TrackScreen(screenName)
+    AnalyticsTracker().TrackScreen(screenName)
     Debug("Pushing screen " + tostr(screen.ScreenID) + " onto view controller stack - " + screenName)
     m.screens.Push(screen)
 End Sub
@@ -475,7 +475,7 @@ Sub vcPopScreen(screen)
         newScreen = m.screens.Peek()
         screenName = firstOf(newScreen.ScreenName, type(newScreen.Screen))
         Debug("Top of stack is once again: " + screenName)
-        m.Analytics.TrackScreen(screenName)
+        AnalyticsTracker().TrackScreen(screenName)
         newScreen.Activate(screen)
     end if
 
@@ -570,12 +570,11 @@ Sub vcShow()
     end while
 
     ' Clean up some references on the way out
+    AnalyticsTracker().Cleanup()
     m.Home = invalid
     m.myplex = invalid
     m.GdmAdvertiser = invalid
     m.WebServer = invalid
-    m.Analytics.Cleanup()
-    m.Analytics = invalid
     m.AudioPlayer = invalid
     m.Timers.Clear()
     m.PendingRequests.Clear()

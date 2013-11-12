@@ -98,7 +98,6 @@ End Function
 
 Function vcCreateHomeScreen()
     screen = createHomeScreen(m)
-    screen.ScreenID = -1
     screen.ScreenName = "Home"
     m.InitializeOtherScreen(screen, invalid)
     screen.Screen.SetBreadcrumbEnabled(true)
@@ -404,19 +403,6 @@ Sub vcPushScreen(screen)
 End Sub
 
 Sub vcPopScreen(screen)
-    if screen.ScreenID = -1 then
-        Debug("Popping home screen, cleaning up")
-
-        while m.screens.Count() > 1
-            m.PopScreen(m.screens.Peek())
-        end while
-        m.screens.Pop()
-
-        screen.Loader.Listener = invalid
-        screen.Loader = invalid
-        return
-    end if
-
     if screen.Cleanup <> invalid then screen.Cleanup()
 
     ' Try to clean up some potential circular references
@@ -477,7 +463,13 @@ Sub vcPopScreen(screen)
     ' Let the new top of the stack know that it's visible again. If we have
     ' no screens on the stack, but we didn't just close the home screen, then
     ' we haven't shown the home screen yet. Show it now.
-    if m.screens.Count() = 0 then
+    if m.Home <> invalid AND screen.screenID = m.Home.ScreenID then
+        Debug("Popping home screen")
+        while m.screens.Count() > 1
+            m.PopScreen(m.screens.Peek())
+        end while
+        m.screens.Pop()
+    else if m.screens.Count() = 0 then
         m.Home = m.CreateHomeScreen()
     else if callActivate then
         newScreen = m.screens.Peek()

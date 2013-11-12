@@ -6,8 +6,7 @@ Function createHomeScreenDataLoader(listener)
     loader = CreateObject("roAssociativeArray")
     initDataLoader(loader)
 
-    ' TODO(schuyler): This feels like cheating...
-    loader.ScreenID = -1
+    loader.ScreenID = listener.ScreenID
     loader.Listener = listener
     listener.Loader = loader
 

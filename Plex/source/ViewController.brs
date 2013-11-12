@@ -80,10 +80,10 @@ Function createViewController() As Object
 
     ' Initialize things that run in the background
     InitWebServer(controller)
-    controller.GdmAdvertiser = createGDMAdvertiser(controller)
     controller.AudioPlayer = createAudioPlayer(controller)
     AnalyticsTracker()
     MyPlexManager()
+    GDMAdvertiser()
 
     return controller
 End Function
@@ -567,8 +567,8 @@ Sub vcShow()
 
     ' Clean up some references on the way out
     AnalyticsTracker().Cleanup()
+    GDMAdvertiser().Cleanup()
     m.Home = invalid
-    m.GdmAdvertiser = invalid
     m.WebServer = invalid
     m.AudioPlayer = invalid
     m.Timers.Clear()

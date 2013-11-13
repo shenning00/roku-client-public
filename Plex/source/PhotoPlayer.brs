@@ -24,6 +24,7 @@ Function createPhotoPlayerScreen(context, contextIndex, viewController)
         screen.SetNext(contextIndex, true)
         obj.CurIndex = contextIndex
         obj.PhotoCount = context.count()
+        obj.Context = context
     else
         obj.Item = context
         AddAccountHeaders(screen, obj.Item.server.AccessToken)
@@ -31,6 +32,7 @@ Function createPhotoPlayerScreen(context, contextIndex, viewController)
         screen.SetNext(0, true)
         obj.CurIndex = 0
         obj.PhotoCount = 1
+        obj.Context = [context]
     end if
 
     obj.HandleMessage = photoPlayerHandleMessage
@@ -71,18 +73,26 @@ Function photoPlayerHandleMessage(msg) As Boolean
             amountPlayed = m.playbackTimer.GetElapsedSeconds()
             Debug("Sending analytics event, appear to have watched slideshow for " + tostr(amountPlayed) + " seconds")
             AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "photo"), m.Item.mediaContainerIdentifier, amountPlayed)
+            NowPlayingManager().location = "navigation"
+            NowPlayingManager().UpdatePlaybackState("photo", invalid, "stopped", 0)
 
             m.ViewController.PopScreen(m)
         else if msg.isPlaybackPosition() then
             m.CurIndex = msg.GetIndex()
+            NowPlayingManager().location = "fullScreenPhoto"
+            NowPlayingManager().UpdatePlaybackState("photo", m.Context[m.CurIndex], "playing", 0)
         else if msg.isRequestFailed() then
             Debug("preload failed: " + tostr(msg.GetIndex()))
         else if msg.isRequestInterrupted() then
             Debug("preload interrupted: " + tostr(msg.GetIndex()))
         else if msg.isPaused() then
             Debug("paused")
+            m.IsPaused = true
+            NowPlayingManager().UpdatePlaybackState("photo", m.Context[m.CurIndex], "paused", 0)
         else if msg.isResumed() then
             Debug("resumed")
+            m.IsPaused = false
+            NowPlayingManager().UpdatePlaybackState("photo", m.Context[m.CurIndex], "playing", 0)
         end if
     end if
 
@@ -92,12 +102,20 @@ End Function
 Sub photoPlayerPause()
     if NOT m.IsPaused then
         m.Screen.Pause()
+
+        ' Calling Pause on the screen won't trigger an isPaused event
+        m.IsPaused = true
+        NowPlayingManager().UpdatePlaybackState("photo", m.Context[m.CurIndex], "paused", 0)
     end if
 End Sub
 
 Sub photoPlayerResume()
     if m.IsPaused then
         m.Screen.Resume()
+
+        ' Calling Resume on the screen won't trigger an isResumed event
+        m.IsPaused = false
+        NowPlayingManager().UpdatePlaybackState("photo", m.Context[m.CurIndex], "playing", 0)
     end if
 End Sub
 

@@ -132,6 +132,10 @@ Sub photoPlayerNext()
 
     if index <> newIndex then
         m.Screen.SetNext(newIndex, true)
+        if m.IsPaused then
+            m.Resume()
+            m.Pause()
+        end if
     end if
 End Sub
 
@@ -148,6 +152,10 @@ Sub photoPlayerPrev()
 
     if index <> newIndex then
         m.Screen.SetNext(newIndex, true)
+        if m.IsPaused then
+            m.Resume()
+            m.Pause()
+        end if
     end if
 End Sub
 

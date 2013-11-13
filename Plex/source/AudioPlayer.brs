@@ -51,6 +51,7 @@ Function AudioPlayer()
         obj.UpdateNowPlaying = audioPlayerUpdateNowPlaying
         obj.OnTimerExpired = audioPlayerOnTimerExpired
 
+        obj.IgnoreTimelines = false
         obj.timelineTimer = createTimer()
         obj.timelineTimer.Name = "timeline"
         obj.timelineTimer.SetDuration(1000, true)
@@ -92,12 +93,14 @@ Function audioPlayerHandleMessage(msg) As Boolean
             m.CurIndex = newIndex
         else if msg.isRequestFailed() then
             Debug("Audio playback failed")
+            m.IgnoreTimelines = false
             maxIndex = m.Context.Count() - 1
             newIndex = m.CurIndex + 1
             if newIndex > maxIndex then newIndex = 0
             m.CurIndex = newIndex
         else if msg.isListItemSelected() then
             Debug("Starting to play track: " + tostr(item.Url))
+            m.IgnoreTimelines = false
             m.IsPlaying = true
             m.IsPaused = false
             m.playbackOffset = 0
@@ -192,6 +195,7 @@ Sub audioPlayerNext()
 
     if newIndex > maxIndex then newIndex = 0
 
+    m.IgnoreTimelines = true
     m.Stop()
     m.CurIndex = newIndex
     m.player.SetNext(newIndex)
@@ -204,6 +208,7 @@ Sub audioPlayerPrev()
     newIndex = m.CurIndex - 1
     if newIndex < 0 then newIndex = m.Context.Count() - 1
 
+    m.IgnoreTimelines = true
     m.Stop()
     m.CurIndex = newIndex
     m.player.SetNext(newIndex)
@@ -211,7 +216,10 @@ Sub audioPlayerPrev()
 End Sub
 
 Sub audioPlayerSetContext(context, contextIndex, screen, startPlayer)
-    if startPlayer then m.Stop()
+    if startPlayer then
+        m.IgnoreTimelines = true
+        m.Stop()
+    end if
 
     item = context[contextIndex]
 
@@ -337,6 +345,7 @@ Sub audioPlayerOnTimerExpired(timer)
 End Sub
 
 Sub audioPlayerUpdateNowPlaying()
+    if m.IgnoreTimelines then return
     state = "stopped"
     item = invalid
     time = 0

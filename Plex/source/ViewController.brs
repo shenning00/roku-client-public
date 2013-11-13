@@ -80,7 +80,7 @@ Function createViewController() As Object
 
     ' Initialize things that run in the background
     InitWebServer(controller)
-    controller.AudioPlayer = createAudioPlayer(controller)
+    AudioPlayer()
     AnalyticsTracker()
     MyPlexManager()
     GDMAdvertiser()
@@ -145,8 +145,8 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen.SetListStyle("flat-episodic", "zoom-to-fill")
         screenName = "Album Poster"
     else if item.key = "nowplaying" then
-        m.AudioPlayer.ContextScreenID = m.nextScreenId
-        screen = createAudioSpringboardScreen(m.AudioPlayer.Context, m.AudioPlayer.CurIndex, m)
+        AudioPlayer().ContextScreenID = m.nextScreenId
+        screen = createAudioSpringboardScreen(AudioPlayer().Context, AudioPlayer().CurIndex, m)
         screenName = "Now Playing"
         if screen = invalid then return invalid
     else if contentType = "audio" then
@@ -275,9 +275,9 @@ End Function
 
 Function vcCreateContextMenu()
     ' Our context menu is only relevant if the audio player has content.
-    if m.AudioPlayer.ContextScreenID = invalid then return invalid
+    if AudioPlayer().ContextScreenID = invalid then return invalid
 
-    return m.AudioPlayer.ShowContextMenu()
+    return AudioPlayer().ShowContextMenu()
 End Function
 
 Function vcCreatePhotoPlayer(context, contextIndex=invalid, show=true)
@@ -295,7 +295,7 @@ End Function
 
 Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=true)
     ' Stop any background audio first
-    m.AudioPlayer.Stop()
+    AudioPlayer().Stop()
 
     ' Make sure we have full details before trying to play.
     metadata.ParseDetails()
@@ -340,7 +340,7 @@ Function vcCreatePlayerForItem(context, contextIndex, seekValue=invalid)
     if item.ContentType = "photo" then
         return m.CreatePhotoPlayer(context, contextIndex)
     else if item.ContentType = "audio" then
-        m.AudioPlayer.Stop()
+        AudioPlayer().Stop()
         return m.CreateScreenForItem(context, contextIndex, invalid)
     else if item.ContentType = "movie" OR item.ContentType = "episode" OR item.ContentType = "clip" then
         directplay = RegRead("directplay", "preferences", "0").toint()
@@ -538,7 +538,7 @@ Sub vcShow()
                     m.WebServer.postwait()
                 end if
             else if type(msg) = "roAudioPlayerEvent" then
-                m.AudioPlayer.HandleMessage(msg)
+                AudioPlayer().HandleMessage(msg)
             else if type(msg) = "roSystemLogEvent" then
                 msgInfo = msg.GetInfo()
                 if msgInfo.LogType = "bandwidth.minute" then
@@ -568,9 +568,9 @@ Sub vcShow()
     ' Clean up some references on the way out
     AnalyticsTracker().Cleanup()
     GDMAdvertiser().Cleanup()
+    AudioPlayer().Cleanup()
     m.Home = invalid
     m.WebServer = invalid
-    m.AudioPlayer = invalid
     m.Timers.Clear()
     m.PendingRequests.Clear()
     m.SocketListeners.Clear()

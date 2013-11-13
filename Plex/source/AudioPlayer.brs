@@ -5,45 +5,50 @@
 '**  Copyright (c) 2009 Roku Inc. All Rights Reserved.
 '**********************************************************
 
-Function createAudioPlayer(viewController)
+Function AudioPlayer()
     ' Unlike just about everything else, the audio player isn't a Screen.
     ' So we'll wrap the Roku audio player similarly, but not quite in the
     ' same way.
 
-    obj = CreateObject("roAssociativeArray")
+    if m.AudioPlayer = invalid then
+        obj = CreateObject("roAssociativeArray")
 
-    obj.Port = viewController.GlobalMessagePort
-    obj.ViewController = viewController
+        obj.Port = GetViewController().GlobalMessagePort
 
-    obj.HandleMessage = audioPlayerHandleMessage
+        obj.HandleMessage = audioPlayerHandleMessage
+        obj.Cleanup = audioPlayerCleanup
 
-    obj.Play = audioPlayerPlay
-    obj.Pause = audioPlayerPause
-    obj.Resume = audioPlayerResume
-    obj.Stop = audioPlayerStop
-    obj.Next = audioPlayerNext
-    obj.Prev = audioPlayerPrev
+        obj.Play = audioPlayerPlay
+        obj.Pause = audioPlayerPause
+        obj.Resume = audioPlayerResume
+        obj.Stop = audioPlayerStop
+        obj.Next = audioPlayerNext
+        obj.Prev = audioPlayerPrev
 
-    obj.audioPlayer = CreateObject("roAudioPlayer")
-    obj.audioPlayer.SetMessagePort(obj.Port)
+        obj.player = CreateObject("roAudioPlayer")
+        obj.player.SetMessagePort(obj.Port)
 
-    obj.Context = invalid
-    obj.CurIndex = invalid
-    obj.ContextScreenID = invalid
-    obj.SetContext = audioPlayerSetContext
+        obj.Context = invalid
+        obj.CurIndex = invalid
+        obj.ContextScreenID = invalid
+        obj.SetContext = audioPlayerSetContext
 
-    obj.ShowContextMenu = audioPlayerShowContextMenu
+        obj.ShowContextMenu = audioPlayerShowContextMenu
 
-    obj.PlayThemeMusic = audioPlayerPlayThemeMusic
+        obj.PlayThemeMusic = audioPlayerPlayThemeMusic
 
-    obj.IsPlaying = false
-    obj.IsPaused = false
+        obj.IsPlaying = false
+        obj.IsPaused = false
 
-    obj.playbackTimer = createTimer()
-    obj.playbackOffset = 0
-    obj.GetPlaybackProgress = audioPlayerGetPlaybackProgress
+        obj.playbackTimer = createTimer()
+        obj.playbackOffset = 0
+        obj.GetPlaybackProgress = audioPlayerGetPlaybackProgress
 
-    return obj
+        ' Singleton
+        m.AudioPlayer = obj
+    end if
+
+    return m.AudioPlayer
 End Function
 
 Function audioPlayerHandleMessage(msg) As Boolean
@@ -84,7 +89,7 @@ Function audioPlayerHandleMessage(msg) As Boolean
             m.IsPaused = false
             m.playbackOffset = 0
             m.playbackTimer.Mark()
-            m.ViewController.DestroyGlitchyScreens()
+            GetViewController().DestroyGlitchyScreens()
         else if msg.isStatusMessage() then
             'Debug("Audio player status: " + tostr(msg.getMessage()))
         else if msg.isFullResult() then
@@ -118,28 +123,34 @@ Function audioPlayerHandleMessage(msg) As Boolean
     return handled
 End Function
 
+Sub audioPlayerCleanup()
+    m.Stop()
+    fn = function() :m.AudioPlayer = invalid :end function
+    fn()
+End Sub
+
 Sub audioPlayerPlay()
     if m.Context <> invalid then
-        m.audioPlayer.Play()
+        m.player.Play()
     end if
 End Sub
 
 Sub audioPlayerPause()
     if m.Context <> invalid then
-        m.audioPlayer.Pause()
+        m.player.Pause()
     end if
 End Sub
 
 Sub audioPlayerResume()
     if m.Context <> invalid then
-        m.audioPlayer.Resume()
+        m.player.Resume()
     end if
 End Sub
 
 Sub audioPlayerStop()
     if m.Context <> invalid then
-        m.audioPlayer.Stop()
-        m.audioPlayer.SetNext(m.CurIndex)
+        m.player.Stop()
+        m.player.SetNext(m.CurIndex)
         m.IsPlaying = false
         m.IsPaused = false
     end if
@@ -155,7 +166,7 @@ Sub audioPlayerNext()
 
     m.Stop()
     m.CurIndex = newIndex
-    m.audioPlayer.SetNext(newIndex)
+    m.player.SetNext(newIndex)
     m.Play()
 End Sub
 
@@ -167,7 +178,7 @@ Sub audioPlayerPrev()
 
     m.Stop()
     m.CurIndex = newIndex
-    m.audioPlayer.SetNext(newIndex)
+    m.player.SetNext(newIndex)
     m.Play()
 End Sub
 
@@ -186,7 +197,7 @@ Sub audioPlayerSetContext(context, contextIndex, screen, startPlayer)
     end if
 
     if item.server <> invalid then
-        AddAccountHeaders(m.audioPlayer, item.server.AccessToken)
+        AddAccountHeaders(m.player, item.server.AccessToken)
     end if
 
     if screen = invalid then
@@ -200,18 +211,18 @@ Sub audioPlayerSetContext(context, contextIndex, screen, startPlayer)
         end if
     end if
 
-    m.audioPlayer.SetLoop(m.Loop)
-    m.audioPlayer.SetContentList(context)
+    m.player.SetLoop(m.Loop)
+    m.player.SetContentList(context)
 
     if startPlayer then
-        m.audioPlayer.SetNext(contextIndex)
+        m.player.SetNext(contextIndex)
         m.IsPlaying = false
         m.IsPaused = false
     else
         maxIndex = context.Count() - 1
         newIndex = contextIndex + 1
         if newIndex > maxIndex then newIndex = 0
-        m.audioPlayer.SetNext(newIndex)
+        m.player.SetNext(newIndex)
     end if
 End Sub
 
@@ -263,7 +274,7 @@ Function audioPlayerMenuHandleButton(command, data) As Boolean
         dummyItem = CreateObject("roAssociativeArray")
         dummyItem.ContentType = "audio"
         dummyItem.Key = "nowplaying"
-        obj.ViewController.CreateScreenForItem(dummyItem, invalid, ["Now Playing"])
+        GetViewController().CreateScreenForItem(dummyItem, invalid, ["Now Playing"])
     else if command = "close" then
         return true
     end if

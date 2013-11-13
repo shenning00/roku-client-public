@@ -803,12 +803,11 @@ End Function
 
 Sub homeRefreshData()
     ' Update the Now Playing item according to whether or not something is playing
-    audioPlayer = GetViewController().AudioPlayer
     miscContent = m.contentArray[m.RowIndexes["misc"]].content
-    if m.nowPlayingItem.CurIndex = invalid AND audioPlayer.ContextScreenID <> invalid then
+    if m.nowPlayingItem.CurIndex = invalid AND AudioPlayer().ContextScreenID <> invalid then
         m.nowPlayingItem.CurIndex = miscContent.Count()
         miscContent.Push(m.nowPlayingItem)
-    else if m.nowPlayingItem.CurIndex <> invalid AND audioPlayer.ContextScreenID = invalid then
+    else if m.nowPlayingItem.CurIndex <> invalid AND AudioPlayer().ContextScreenID = invalid then
         miscContent.Delete(m.nowPlayingItem.CurIndex)
         m.nowPlayingItem.CurIndex = invalid
     end if

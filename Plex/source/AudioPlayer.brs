@@ -143,6 +143,7 @@ End Function
 
 Sub audioPlayerCleanup()
     m.Stop()
+    m.timelineTimer = invalid
     fn = function() :m.AudioPlayer = invalid :end function
     fn()
 End Sub

@@ -106,6 +106,11 @@ Function audioPlayerHandleMessage(msg) As Boolean
             m.playbackOffset = 0
             m.playbackTimer.Mark()
             GetViewController().DestroyGlitchyScreens()
+
+            if m.Context.Count() > 1 then
+                NowPlayingManager().SetControllable("music", "skipPrevious", (m.CurIndex > 0 OR m.Loop))
+                NowPlayingManager().SetControllable("music", "skipNext", (m.CurIndex < m.Context.Count() - 1 OR m.Loop))
+            end if
         else if msg.isStatusMessage() then
             'Debug("Audio player status: " + tostr(msg.getMessage()))
         else if msg.isFullResult() then
@@ -262,6 +267,9 @@ Sub audioPlayerSetContext(context, contextIndex, screen, startPlayer)
 
     m.player.SetLoop(m.Loop)
     m.player.SetContentList(context)
+
+    NowPlayingManager().SetControllable("music", "skipPrevious", context.Count() > 1)
+    NowPlayingManager().SetControllable("music", "skipNext", context.Count() > 1)
 
     if startPlayer then
         m.player.SetNext(contextIndex)

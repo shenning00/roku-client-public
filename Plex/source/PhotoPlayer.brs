@@ -35,6 +35,9 @@ Function createPhotoPlayerScreen(context, contextIndex, viewController)
         obj.Context = [context]
     end if
 
+    NowPlayingManager().SetControllable("photo", "skipPrevious", obj.Context.Count() > 1)
+    NowPlayingManager().SetControllable("photo", "skipNext", obj.Context.Count() > 1)
+
     obj.HandleMessage = photoPlayerHandleMessage
 
     obj.Pause = photoPlayerPause

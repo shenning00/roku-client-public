@@ -360,9 +360,7 @@ Sub vcShowReleaseNotes()
     header = GetGlobal("appName") + " has been updated to " + GetGlobal("appVersionStr")
     paragraphs = []
     paragraphs.Push("Changes in this version include:")
-    paragraphs.Push(" - Fix a crash when adding servers manually.")
-    paragraphs.Push(" - Fix episode title when watched status changes.")
-    paragraphs.Push(" - Update supported H.264 level to 4.1.")
+    paragraphs.Push(" - Support for new remote controls.")
     paragraphs.Push(" - Add clock to home screen.")
 
     screen = createParagraphScreen(header, paragraphs, m)

@@ -138,7 +138,7 @@ Function audioHandleMessage(msg) As Boolean
                 end if
 
                 if player.ContextScreenID = m.ScreenID then
-                    if player.Loop then
+                    if player.Repeat = 2 then
                         dialog.SetButton("loop", "Loop: On")
                     else
                         dialog.SetButton("loop", "Loop: Off")
@@ -232,7 +232,7 @@ Function audioDialogHandleButton(command, data) As Boolean
             obj.IsShuffled = false
             m.SetButton(command, "Shuffle: Off")
         else
-            obj.Shuffle(obj.Context)
+            obj.Shuffle()
             obj.IsShuffled = true
             m.SetButton(command, "Shuffle: On")
         end if
@@ -242,13 +242,13 @@ Function audioDialogHandleButton(command, data) As Boolean
             player.SetContext(obj.Context, obj.CurIndex, obj, false)
         end if
     else if command = "loop" then
-        if player.Loop then
+        if player.Repeat = 2 then
             m.SetButton(command, "Loop: Off")
+            player.SetRepeat(0)
         else
             m.SetButton(command, "Loop: On")
+            player.SetRepeat(2)
         end if
-        player.Loop = Not player.Loop
-        player.player.SetLoop(player.Loop)
         m.Refresh()
     else if command = "delete" then
         obj.metadata.server.delete(obj.metadata.key)

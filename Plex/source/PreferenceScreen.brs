@@ -49,9 +49,7 @@ Function settingsHandleMessage(msg) As Boolean
                 setting = m.contentArray[msg.GetIndex()]
 
                 if setting.type = "text" then
-                    screen = m.ViewController.CreateTextInputScreen("Enter " + setting.label, [], false)
-                    screen.Screen.SetText(setting.value)
-                    screen.Screen.SetSecureText(setting.hidden OR setting.secure)
+                    screen = m.ViewController.CreateTextInputScreen("Enter " + setting.label, [], false, setting.value, (setting.hidden OR setting.secure))
                     screen.Listener = m
                     screen.Show()
                 else if setting.type = "bool" then
@@ -128,8 +126,9 @@ Sub prefsHandleTextPreference(regKey, index)
     m.currentRegKey = regKey
     label = m.contentArray[index].OrigTitle
     pref = m.Prefs[regKey]
-    screen = m.ViewController.CreateTextInputScreen(pref.heading, [label], false)
-    screen.Text = RegRead(regKey, "preferences", pref.default)
+    value = RegRead(regKey, "preferences", pref.default)
+    screen = m.ViewController.CreateTextInputScreen(pref.heading, [label], false, value)
+    screen.Text = value
     screen.Screen.SetMaxLength(80)
     screen.Listener = m
     screen.Show()

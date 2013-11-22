@@ -36,6 +36,7 @@ Function createViewController() As Object
 
     controller.afterCloseCallback = invalid
     controller.CloseScreenWithCallback = vcCloseScreenWithCallback
+    controller.CloseScreen = vcCloseScreen
 
     controller.Show = vcShow
     controller.UpdateScreenProperties = vcUpdateScreenProperties
@@ -75,6 +76,8 @@ Function createViewController() As Object
     controller.SystemLog.SetMessagePort(controller.GlobalMessagePort)
     controller.SystemLog.EnableType("bandwidth.minute")
 
+    controller.backButtonTimer = createTimer()
+    controller.backButtonTimer.SetDuration(60000, true)
 
     ' Stuff the controller into the global object
     m.ViewController = controller
@@ -489,6 +492,21 @@ End Function
 Sub vcCloseScreenWithCallback(callback)
     m.afterCloseCallback = callback
     m.screens.Peek().Screen.Close()
+End Sub
+
+Sub vcCloseScreen(simulateRemote)
+    ' Unless the visible screen is the home screen.
+    if m.Home <> invalid AND NOT m.IsActiveScreen(m.Home) then
+        ' Our one complication is the screensaver, which we can't know anything
+        ' about. So if we're simulating the remote control and haven't been
+        ' called in a while, send an ECP back. Otherwise, directly close our
+        ' top screen.
+        if m.backButtonTimer.IsExpired() then
+            SendEcpCommand("Back")
+        else
+            m.screens.Peek().Screen.Close()
+        end if
+    end if
 End Sub
 
 Sub vcShow()

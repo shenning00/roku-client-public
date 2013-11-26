@@ -573,6 +573,8 @@ Sub vcShow()
                 if msgInfo.LogType = "bandwidth.minute" then
                     GetGlobalAA().AddReplace("bandwidth", msgInfo.Bandwidth)
                 end if
+            else if type(msg) = "roChannelStoreEvent" then
+                AppManager().HandleChannelStoreEvent(msg)
             else if msg.isRemoteKeyPressed() and msg.GetIndex() = 10 then
                 m.CreateContextMenu()
             end if

@@ -51,9 +51,7 @@ Function createHomeScreenDataLoader(listener)
     next
 
     ' Kick off myPlex requests if we're signed in.
-    myPlex = MyPlexManager()
-    myPlex.CheckAuthentication()
-    if myPlex.IsSignedIn then
+    if MyPlexManager().IsSignedIn then
         loader.CreateMyPlexRequests(false)
     end if
 
@@ -100,9 +98,6 @@ Function createHomeScreenDataLoader(listener)
     loader.lastSectionKey = RegRead("lastSectionKey")
 
     loader.OnTimerExpired = homeOnTimerExpired
-
-    ' As good a place as any, note that we've started
-    AnalyticsTracker().OnStartup(myPlex.IsSignedIn)
 
     return loader
 End Function

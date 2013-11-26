@@ -26,6 +26,7 @@ Function createViewController() As Object
     controller.CreatePlayerForItem = vcCreatePlayerForItem
     controller.IsVideoPlaying = vcIsVideoPlaying
 
+    controller.ShowFirstRun = vcShowFirstRun
     controller.ShowReleaseNotes = vcShowReleaseNotes
 
     controller.InitializeOtherScreen = vcInitializeOtherScreen
@@ -39,6 +40,7 @@ Function createViewController() As Object
     controller.CloseScreen = vcCloseScreen
 
     controller.Show = vcShow
+    controller.OnInitialized = vcOnInitialized
     controller.UpdateScreenProperties = vcUpdateScreenProperties
     controller.AddBreadcrumbs = vcAddBreadcrumbs
 
@@ -83,6 +85,7 @@ Function createViewController() As Object
     m.ViewController = controller
 
     ' Initialize things that run in the background
+    AppManager().AddInitializer("viewcontroller")
     InitWebServer(controller)
     AudioPlayer()
     AnalyticsTracker()
@@ -359,6 +362,11 @@ Function vcIsVideoPlaying() As Boolean
     return type(m.screens.Peek().Screen) = "roVideoScreen"
 End Function
 
+Sub vcShowFirstRun()
+    ' TODO(schuyler): Unify these
+    ShowHelpScreen()
+End Sub
+
 Sub vcShowReleaseNotes()
     header = GetGlobal("appName") + " has been updated to " + GetGlobal("appVersionStr")
     paragraphs = []
@@ -510,17 +518,19 @@ Sub vcCloseScreen(simulateRemote)
 End Sub
 
 Sub vcShow()
-    if RegRead("last_run_version", "misc", "") <> GetGlobal("appVersionStr") then
+    if RegRead("last_run_version", "misc") = invalid then
+        m.ShowFirstRun()
+        RegWrite("last_run_version", GetGlobal("appVersionStr"), "misc")
+    else if RegRead("last_run_version", "misc", "") <> GetGlobal("appVersionStr") then
         m.ShowReleaseNotes()
         RegWrite("last_run_version", GetGlobal("appVersionStr"), "misc")
-    else
-        m.Home = m.CreateHomeScreen()
     end if
 
     Debug("Starting global message loop")
+    AppManager().ClearInitializer("viewcontroller")
 
     timeout = 0
-    while m.screens.Count() > 0
+    while m.screens.Count() > 0 OR NOT AppManager().IsInitialized()
         m.WebServer.prewait()
         msg = wait(timeout, m.GlobalMessagePort)
         if msg <> invalid then
@@ -595,6 +605,15 @@ Sub vcShow()
     m.SocketListeners.Clear()
 
     Debug("Finished global message loop")
+End Sub
+
+Sub vcOnInitialized()
+    ' As good a place as any, note that we've started
+    AnalyticsTracker().OnStartup(MyPlexManager().IsSignedIn)
+
+    if m.screens.Count() = 0 then
+        m.Home = m.CreateHomeScreen()
+    end if
 End Sub
 
 Sub vcAddBreadcrumbs(screen, breadcrumbs)

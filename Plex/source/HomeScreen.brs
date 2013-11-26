@@ -66,19 +66,6 @@ Sub refreshHomeScreen(changes)
     Capabilities(true)
 End Sub
 
-Sub ShowHelpScreen()
-    header = "Welcome to Plex for Roku!"
-    paragraphs = []
-    paragraphs.Push("Plex for Roku automatically connects to Plex Media Servers on your local network and also works with myPlex to view queued items and connect to your published and shared servers.")
-    paragraphs.Push("To download and install Plex Media Server on your computer, visit http://plexapp.com/getplex")
-    paragraphs.Push("For more information on getting started, visit http://plexapp.com/roku")
-
-    screen = createParagraphScreen(header, paragraphs, GetViewController())
-    GetViewController().InitializeOtherScreen(screen, invalid)
-
-    screen.Show()
-End Sub
-
 Sub homeScreenOnTimerExpired(timer)
     if timer.Name = "clock" AND m.ViewController.IsActiveScreen(m) then
         m.Screen.SetBreadcrumbText("", CurrentTimeAsString())

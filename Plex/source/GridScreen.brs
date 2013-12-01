@@ -52,10 +52,16 @@ Function createGridScreenForItem(item, viewController, style) As Object
 
     obj.Item = item
 
-    container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
-    container.SeparateSearchItems = true
-    obj.Loader = createPaginatedLoader(container, 8, 75)
-    obj.Loader.Listener = obj
+    if item.Filters = "1" then
+        ' TODO(schuyler): row size based on m.gridStyle?
+        obj.Loader = createChunkedLoader(item, 5)
+        obj.Loader.Listener = obj
+    else
+        container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
+        container.SeparateSearchItems = true
+        obj.Loader = createPaginatedLoader(container, 8, 75)
+        obj.Loader.Listener = obj
+    end if
 
     ' Don't play theme music on top of grid screens on the older Roku models.
     ' It's not worth the DestroyAndRecreate headache.

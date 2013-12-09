@@ -401,6 +401,13 @@ Sub vcShowReleaseNotes()
 End Sub
 
 Sub vcShowHelpScreen()
+    ' Only show the help screen once per launch.
+    if m.helpScreenShown = true then
+        return
+    else
+        m.helpScreenShown = true
+    end if
+
     header = "Welcome to Plex!"
     paragraphs = []
     paragraphs.Push("With Plex you can easily stream your videos, music, photos and home movies to your Roku using your Plex Media Server.")

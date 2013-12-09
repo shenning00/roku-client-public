@@ -91,18 +91,26 @@ Sub managerResetState()
 End Sub
 
 Sub managerFetchProducts()
-    m.AddInitializer("channelstore")
+    ' On the older firmware, the roChannelStore exists, it just doesn't seem to
+    ' work. So don't even bother, just say that the item isn't available for
+    ' purchase on the older firmware.
 
-    ' The docs suggest we can make two requests at the same time by using the
-    ' source identity, but it doesn't actually work. So we'd need to get the
-    ' catalog and the purchases serially. Fortunately, the docs also fail to
-    ' mention that the catalog returns the purchased date. So we can just fetch
-    ' the catalog and get all the info we need.
+    if CheckMinimumVersion(GetGlobal("rokuVersionArr", [0]), [5, 1]) then
+        m.AddInitializer("channelstore")
 
-    store = CreateObject("roChannelStore")
-    store.SetMessagePort(GetViewController().GlobalMessagePort)
-    store.GetCatalog()
-    m.PendingStore = store
+        ' The docs suggest we can make two requests at the same time by using the
+        ' source identity, but it doesn't actually work. So we'd need to get the
+        ' catalog and the purchases serially. Fortunately, the docs also fail to
+        ' mention that the catalog returns the purchased date. So we can just fetch
+        ' the catalog and get all the info we need.
+
+        store = CreateObject("roChannelStore")
+        store.SetMessagePort(GetViewController().GlobalMessagePort)
+        store.GetCatalog()
+        m.PendingStore = store
+    else
+        Debug("Channel store isn't supported by firmware version")
+    end if
 End Sub
 
 Sub managerHandleChannelStoreEvent(msg)

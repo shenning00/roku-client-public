@@ -354,11 +354,19 @@ Function prefsMainHandleMessage(msg) As Boolean
                 else if manager.State = "Purchased" then
                     dialog.Text = "Plex has been purchased and is fully unlocked."
                 else if manager.State = "Trial" then
-                    dialog.Text = "Plex is currently in a trial period. To fully unlock the channel, you can purchase it or connect a PlexPass account."
-                    dialog.SetButton("purchase", "Purchase the channel")
+                    if manager.IsAvailableForPurchase then
+                        dialog.Text = "Plex is currently in a trial period. To fully unlock the channel, you can purchase it or connect a PlexPass account."
+                        dialog.SetButton("purchase", "Purchase the channel")
+                    else
+                        dialog.Text = "Plex is currently in a trial period. To fully unlock the channel, you must connect a PlexPass account."
+                    end if
                 else if manager.State = "Limited" then
-                    dialog.Text = "Your Plex trial has expired and playback is currently disabled. To fully unlock the channel, you can purchase it or connect a PlexPass account."
-                    dialog.SetButton("purchase", "Purchase the channel")
+                    if manager.IsAvailableForPurchase then
+                        dialog.Text = "Your Plex trial has expired and playback is currently disabled. To fully unlock the channel, you can purchase it or connect a PlexPass account."
+                        dialog.SetButton("purchase", "Purchase the channel")
+                    else
+                        dialog.Text = "Your Plex trial has expired and playback is currently disabled. To fully unlock the channel, you must connect a PlexPass account."
+                    end if
                 end if
 
                 dialog.SetButton("close", "Close")

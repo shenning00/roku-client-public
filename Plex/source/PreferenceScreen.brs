@@ -1303,7 +1303,7 @@ Function prefsRemoteControlHandleMessage(msg) As Boolean
 
         if msg.isScreenClosed() then
             Debug("Remote control closed event")
-            m.ViewController.GdmAdvertiser.Refresh()
+            GDMAdvertiser().Refresh()
             m.ViewController.PopScreen(m)
         else if msg.isListItemSelected() then
             command = m.GetSelectedCommand(msg.GetIndex())

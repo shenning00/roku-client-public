@@ -391,6 +391,7 @@ Function homeLoadMoreContent(focusedIndex, extraRows=0)
             else
                 ' Slightly strange, GDM disabled but no servers configured
                 Debug("No servers, no GDM, and no myPlex...")
+                m.Listener.Screen.SetFocusedListItem(loadingRow, 0)
                 GetViewController().ShowHelpScreen()
                 status.loadStatus = 2
                 m.Listener.OnDataLoaded(loadingRow, status.content, 0, status.content.Count(), true)

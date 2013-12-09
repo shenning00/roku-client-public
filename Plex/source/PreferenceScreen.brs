@@ -410,7 +410,7 @@ End Function
 Sub prefsMainActivate(priorScreen)
     if m.checkMyPlexOnActivate then
         m.checkMyPlexOnActivate = false
-        if MyPlexManager.IsSignedIn then
+        if MyPlexManager().IsSignedIn then
             m.Changes["myplex"] = "connected"
         end if
         m.SetTitle(m.myPlexIndex, getCurrentMyPlexLabel())

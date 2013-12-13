@@ -157,12 +157,7 @@ Sub setVideoBasics(video, container, item)
         video.StarRating = int(val(rating)*10)
     endif
 
-    userRating = item@userRating
-    if userRating <> invalid then
-	video.UserRating =  int(val(userRating)*10)
-    else
-	video.UserRating =  0
-    endif
+    if video.UserRating = invalid then video.UserRating = 0
 
     video.guid = item@guid
     video.url = item@url

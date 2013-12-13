@@ -171,24 +171,24 @@ Sub initTheme()
     app = CreateObject("roAppManager")
     theme = CreateObject("roAssociativeArray")
 
-    theme.OverhangOffsetSD_X = "72"
-    theme.OverhangOffsetSD_Y = "10"
+    theme.OverhangOffsetSD_X = "42"
+    theme.OverhangOffsetSD_Y = "27"
     theme.OverhangSliceSD = "pkg:/images/Background_SD.jpg"
     theme.OverhangLogoSD  = "pkg:/images/logo_final_SD.png"
 
-    theme.OverhangOffsetHD_X = "125"
-    theme.OverhangOffsetHD_Y = "10"
+    theme.OverhangOffsetHD_X = "70"
+    theme.OverhangOffsetHD_Y = "28"
     theme.OverhangSliceHD = "pkg:/images/Background_HD.jpg"
     theme.OverhangLogoHD  = "pkg:/images/logo_final_HD.png"
 
-    theme.GridScreenLogoOffsetHD_X = "125"
-    theme.GridScreenLogoOffsetHD_Y = "10"
+    theme.GridScreenLogoOffsetHD_X = "70"
+    theme.GridScreenLogoOffsetHD_Y = "28"
     theme.GridScreenOverhangSliceHD = "pkg:/images/Background_HD.jpg"
     theme.GridScreenLogoHD  = "pkg:/images/logo_final_HD.png"
     theme.GridScreenOverhangHeightHD = "124"
 
-    theme.GridScreenLogoOffsetSD_X = "72"
-    theme.GridScreenLogoOffsetSD_Y = "10"
+    theme.GridScreenLogoOffsetSD_X = "42"
+    theme.GridScreenLogoOffsetSD_Y = "27"
     theme.GridScreenOverhangSliceSD = "pkg:/images/Background_SD.jpg"
     theme.GridScreenLogoSD  = "pkg:/images/logo_final_SD.png"
     theme.GridScreenOverhangHeightSD = "83"

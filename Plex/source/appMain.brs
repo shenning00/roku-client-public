@@ -185,13 +185,13 @@ Sub initTheme()
     theme.GridScreenLogoOffsetHD_Y = "10"
     theme.GridScreenOverhangSliceHD = "pkg:/images/Background_HD.jpg"
     theme.GridScreenLogoHD  = "pkg:/images/logo_final_HD.png"
-    theme.GridScreenOverhangHeightHD = "99"
+    theme.GridScreenOverhangHeightHD = "124"
 
     theme.GridScreenLogoOffsetSD_X = "72"
     theme.GridScreenLogoOffsetSD_Y = "10"
     theme.GridScreenOverhangSliceSD = "pkg:/images/Background_SD.jpg"
     theme.GridScreenLogoSD  = "pkg:/images/logo_final_SD.png"
-    theme.GridScreenOverhangHeightSD = "66"
+    theme.GridScreenOverhangHeightSD = "83"
 
     ' We want to use a dark background throughout, just like the default
     ' grid. Unfortunately that means we need to change all sorts of stuff.

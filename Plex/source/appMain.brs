@@ -31,15 +31,6 @@ Sub Main(args)
 
     RegDelete("quality_override", "preferences")
 
-    ' Convert the old theme music preference to the new one
-    oldThemeMusic = RegRead("play_theme_music", "preferences", "")
-    if oldThemeMusic <> "" then
-        if oldThemeMusic = "0" then
-            RegWrite("theme_music", "preferences", "disabled")
-        end if
-        RegDelete("play_theme_music", "preferences")
-    end if
-
     'initialize theme attributes like titles, logos and overhang color
     initTheme()
 

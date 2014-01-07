@@ -376,6 +376,7 @@ Function CurrentTimeAsString(localized=true As Boolean) As String
     else if hours >= 12 then
         hours = hours - 12
         suffix = " pm"
+        if hours = 0 then hours = 12
     else
         suffix = " am"
         if hours = 0 then hours = 12

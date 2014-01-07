@@ -73,6 +73,7 @@ Sub homeScreenOnTimerExpired(timer)
 End Sub
 
 Sub homeScreenActivate(priorScreen)
+    m.clockTimer.Active = (RegRead("home_clock_display", "preferences", "12h") <> "off")
     m.Screen.SetBreadcrumbText("", CurrentTimeAsString())
     m.SuperActivate(priorScreen)
 End Sub

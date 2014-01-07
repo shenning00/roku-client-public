@@ -360,6 +360,10 @@ Function CheckMinimumVersion(versionArr, requiredVersion) As Boolean
 End Function
 
 Function CurrentTimeAsString(localized=true As Boolean) As String
+    timeFormat = RegRead("home_clock_display", "preferences", "12h")
+
+    if timeFormat = "off" then return ""
+
     time = CreateObject("roDateTime")
 
     if localized then
@@ -367,13 +371,15 @@ Function CurrentTimeAsString(localized=true As Boolean) As String
     end if
 
     hours = time.GetHours()
-    if hours >= 12 then
+    if timeFormat = "24h" then
+        suffix = ""
+    else if hours >= 12 then
         hours = hours - 12
         suffix = " pm"
     else
         suffix = " am"
+        if hours = 0 then hours = 12
     end if
-    if hours = 0 then hours = 12
     timeStr = tostr(hours) + ":"
 
     minutes = time.GetMinutes()

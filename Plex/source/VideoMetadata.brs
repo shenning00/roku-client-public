@@ -70,7 +70,7 @@ Sub setVideoBasics(video, container, item)
     video.viewCount = item@viewCount
     video.Watched = video.viewCount <> invalid AND val(video.viewCount) > 0
 
-    video.ShortDescriptionLine1 = firstOf(item@title, item@name)
+    video.ShortDescriptionLine1 = firstOf(item@title, item@name, "")
 
     'grandparentKey -- for episode - RR
     if item@grandparentKey <> invalid then
@@ -125,7 +125,7 @@ Sub setVideoBasics(video, container, item)
             end if
             video.OrigReleaseDate = video.ReleaseDate
             video.ReleaseDate = video.EpisodeStr
-            video.TitleSeason = firstOf(item@title, item@name) + " - " + video.EpisodeStr
+            video.TitleSeason = firstOf(item@title, item@name, "") + " - " + video.EpisodeStr
         end if
     else if video.ContentType = "clip" then
         video.ReleaseDate = firstOf(video.ReleaseDate, item@subtitle)

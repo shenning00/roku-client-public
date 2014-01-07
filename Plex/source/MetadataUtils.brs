@@ -43,7 +43,7 @@ Function createBaseMetadata(container, item, thumb=invalid) As Object
         server = GetPlexMediaServer(item@machineIdentifier)
     end if
 
-    metadata.Title = firstOf(item@title, item@name)
+    metadata.Title = firstOf(item@title, item@name, "")
 
     ' There is a *massive* performance problem on grid views if the description
     ' isn't truncated.

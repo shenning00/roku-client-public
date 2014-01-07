@@ -384,8 +384,8 @@ Sub vcShowReleaseNotes()
     header = GetGlobal("appName") + " has been updated to " + GetGlobal("appVersionStr")
     paragraphs = []
     paragraphs.Push("Changes in this version include:")
-    paragraphs.Push(" - Support for new remote controls.")
-    paragraphs.Push(" - Add clock to home screen.")
+    paragraphs.Push(" - Channel store integration fixes.")
+    paragraphs.Push(" - Add clock display preference.")
 
     screen = createParagraphScreen(header, paragraphs, m)
     screen.ScreenName = "Release Notes"

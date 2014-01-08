@@ -201,6 +201,9 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     else if item.key = "globalprefs" then
         screen = createPreferencesScreen(m)
         screenName = "Preferences Main"
+    else if item.key = "_filters_" then
+        screen = createFiltersScreen(item, m)
+        screenName = "Filters"
     else if item.key = "/channels/all" then
         ' Special case for all channels to force it into a special grid view
         screen = createGridScreen(m, "flat-square")
@@ -478,6 +481,7 @@ Sub vcPopScreen(screen)
 
     ' Try to clean up some potential circular references
     screen.Listener = invalid
+    screen.FilterOptions = invalid
     if screen.Loader <> invalid then
         screen.Loader.Listener = invalid
         screen.Loader = invalid

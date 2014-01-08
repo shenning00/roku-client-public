@@ -428,3 +428,20 @@ Function UnshuffleArray(arr, focusedIndex)
 
     return firstOf(item.OrigIndex, 0)
 End Function
+
+Function JoinArray(arr, sep, key1="", key2="")
+    result = ""
+    first = true
+
+    for each value in arr
+        if type(value) = "roAssociativeArray" then value = firstOf(value[key1], value[key2])
+        if first then
+            first = false
+        else
+            result = result + sep
+        end if
+        result = result + value
+    end for
+
+    return result
+End Function

@@ -19,11 +19,13 @@ Sub lsAddItem(item, command=invalid, value=invalid)
         item.HDPosterURL = "file://pkg:/images/gear.png"
     end if
 
-    item.OrigTitle = item.Title
+    if item.OrigTitle = invalid then item.OrigTitle = item.Title
     item.CommandName = command
 
     if value <> invalid and value <> "" then
         item.Title = item.OrigTitle + ": " + value
+    else
+        item.Title = item.OrigTitle
     end if
 
     m.contentArray.Push(item)

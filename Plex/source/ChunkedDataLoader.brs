@@ -27,33 +27,30 @@ Function createChunkedLoader(item, rowSize)
     loader.loadedSize = 0
     loader.hasStartedLoading = false
 
-    ' Make a blocking request to figure out the total item count and initialize
-    ' our arrays.
-    request = loader.server.CreateRequest(loader.sourceUrl, loader.key)
-    request.AddHeader("X-Plex-Container-Start", "0")
-    request.AddHeader("X-Plex-Container-Size", "0")
-    response = GetToStringWithTimeout(request, 60)
-    xml = CreateObject("roXMLElement")
-    if xml.parse(response) then
-        loader.totalSize = firstOf(xml@totalSize, "0").toInt()
-    end if
+    loader.FilterOptions = createFilterOptions(item)
 
-    if loader.totalSize > 0 then
-        numRows% = ((loader.totalSize - 1) / rowSize) + 1
-        loader.names.Push("Misc")
-        loader.rowContent[0] = []
+    loader.SetupRows = chunkedSetupRows
+    loader.SetupRows()
 
-        for i = 0 to numRows% - 1
-            loader.names.Push(tostr(i * rowSize + 1) + " - " + tostr((i + 1) * rowSize))
-            loader.rowContent[i + 1] = []
-        next
-    end if
+    ' Add a dummy item for bringing up the filters screen.
+    filters = CreateObject("roAssociativeArray")
+    filters.server = item.server
+    filters.sourceUrl = FullUrl(item.server.serverUrl, item.sourceUrl, item.key)
+    filters.ContentType = "filters"
+    filters.Key = "_filters_"
+    filters.Title = "Filters"
+    filters.SectionType = item.ContentType
+    filters.ShortDescriptionLine1 = "Filters"
+    filters.Description = "Filter content in this section"
+    filters.SDPosterURL = "file://pkg:/images/gear.png"
+    filters.HDPosterURL = "file://pkg:/images/gear.png"
+    filters.FilterOptions = loader.FilterOptions
+    loader.rowContent[0].Push(filters)
 
     ' Make a blocking request to load the container in order to populate the
     ' first row with things like On Deck and Search.
     container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
     container.SeparateSearchItems = true
-    ' TODO(schuyler): Add a dummy item to load filters
 
     if m.MiscShortcutKeys = invalid then
         m.MiscShortcutKeys = CreateObject("roAssociativeArray")
@@ -71,6 +68,36 @@ Function createChunkedLoader(item, rowSize)
 
     return loader
 End Function
+
+Sub chunkedSetupRows()
+    ' Make a blocking request to figure out the total item count and initialize
+    ' our arrays.
+    request = m.server.CreateRequest(m.sourceUrl, m.FilterOptions.GetUrl())
+    request.AddHeader("X-Plex-Container-Start", "0")
+    request.AddHeader("X-Plex-Container-Size", "0")
+    response = GetToStringWithTimeout(request, 60)
+    xml = CreateObject("roXMLElement")
+    if xml.parse(response) then
+        m.totalSize = firstOf(xml@totalSize, "0").toInt()
+    end if
+
+    ' TODO(schuyler): Make sure we handle empty sections reasonably
+
+    firstRowContent = firstOf(m.rowContent[0], [])
+    m.names.Clear()
+    m.rowContent.Clear()
+    m.names.Push("Misc")
+    m.rowContent[0] = firstRowContent
+
+    if m.totalSize > 0 then
+        numRows% = ((m.totalSize - 1) / m.rowSize) + 1
+
+        for i = 0 to numRows% - 1
+            m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr((i + 1) * m.rowSize))
+            m.rowContent[i + 1] = []
+        next
+    end if
+End Sub
 
 Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
     if NOT m.hasStartedLoading then
@@ -117,7 +144,7 @@ Sub chunkedStartRequest()
     end if
 
     request = CreateObject("roAssociativeArray")
-    httpRequest = m.server.CreateRequest(m.sourceUrl, m.key)
+    httpRequest = m.server.CreateRequest(m.sourceUrl, m.FilterOptions.GetUrl())
     httpRequest.AddHeader("X-Plex-Container-Start", tostr(m.loadedSize))
     httpRequest.AddHeader("X-Plex-Container-Size", tostr(chunkSize))
     request.offset = m.loadedSize

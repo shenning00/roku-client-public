@@ -70,6 +70,9 @@ Function createChunkedLoader(item, rowSize)
 End Function
 
 Sub chunkedSetupRows()
+    m.totalSize = 0
+    m.loadedSize = 0
+
     ' Make a blocking request to figure out the total item count and initialize
     ' our arrays.
     request = m.server.CreateRequest(m.sourceUrl, m.FilterOptions.GetUrl())
@@ -129,7 +132,12 @@ Function chunkedGetPendingRequestCount() As Integer
 End Function
 
 Sub chunkedRefreshData()
-    ' TODO(schuyler)
+    if m.Listener <> invalid AND m.Listener.InitializeRows <> invalid then
+        m.SetupRows()
+        m.Listener.InitializeRows()
+        m.StartRequest()
+        m.Listener.OnDataLoaded(0, m.rowContent[0], 0, m.rowContent[0].Count(), true)
+    end if
 End Sub
 
 Sub chunkedStartRequest()

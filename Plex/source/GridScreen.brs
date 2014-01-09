@@ -42,6 +42,7 @@ Function createGridScreen(viewController, style="flat-movie", upBehavior="exit")
     screen.recreating = false
 
     screen.OnDataLoaded = gridOnDataLoaded
+    screen.InitializeRows = gridInitializeRows
 
     return screen
 End Function
@@ -73,13 +74,9 @@ Function createGridScreenForItem(item, viewController, style) As Object
     return obj
 End Function
 
-Function showGridScreen() As Integer
-    facade = CreateObject("roGridScreen")
-    facade.Show()
-
-    totalTimer = createTimer()
-
+Function gridInitializeRows()
     names = m.Loader.GetNames()
+    m.contentArray.Clear()
 
     if names.Count() = 0 then
         Debug("Nothing to load for grid")
@@ -90,7 +87,7 @@ Function showGridScreen() As Integer
         dialog.Show()
 
         m.popOnActivate = true
-        return -1
+        return false
     end if
 
     m.Screen.SetupLists(names.Count())
@@ -107,6 +104,17 @@ Function showGridScreen() As Integer
         end if
     end for
 
+    return true
+End Function
+
+Function showGridScreen() As Integer
+    facade = CreateObject("roGridScreen")
+    facade.Show()
+
+    totalTimer = createTimer()
+
+    if NOT m.InitializeRows() then return -1
+
     m.Screen.Show()
     facade.Close()
 
@@ -115,11 +123,11 @@ Function showGridScreen() As Integer
     ' grid. Once we start the event loop we can load the rest of the
     ' content.
 
-    maxRow = names.Count() - 1
+    maxRow = m.contentArray.Count() - 1
     if maxRow > 1 then maxRow = 1
 
     for row = 0 to maxRow
-        Debug("Loading beginning of row " + tostr(row) + ", " + tostr(names[row]))
+        Debug("Loading beginning of row " + tostr(row))
         m.Loader.LoadMoreContent(row, 0)
     end for
 

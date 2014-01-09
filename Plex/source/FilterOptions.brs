@@ -178,6 +178,8 @@ End Function
 Function foSetSelectedType(selectedIndex)
     if m.currentTypeIndex <> selectedIndex then
         m.currentTypeIndex = selectedIndex
+        m.currentFilters.Clear()
+        m.currentSorts.Clear()
         return true
     else
         return false

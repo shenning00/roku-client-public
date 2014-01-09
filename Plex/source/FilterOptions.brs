@@ -43,9 +43,48 @@ Function createFilterOptions(section)
     obj.FetchFilterValues = foFetchFilterValues
     obj.OnUrlEvent = foOnUrlEvent
     obj.IsInitialized = foIsInitialized
+    obj.InitializeOptionsFromString = foInitializeOptionsFromString
+
+    obj.cacheKey = tostr(section.server.machineID) + "!" + tostr(section.key)
+
+    ' Look for previous filter values for this section
+    obj.InitializeOptionsFromString(RegRead(obj.cacheKey + "!type", "filters"), RegRead(obj.cacheKey + "!sort", "filters"), RegRead(obj.cacheKey + "!filters", "filters"))
 
     return obj
 End Function
+
+Sub foInitializeOptionsFromString(typeStr, sortStr, filtersStr)
+    if typeStr <> invalid then
+        for i = 0 to m.types.Count() - 1
+            if m.types[i].EnumValue = typeStr then
+                m.currentTypeIndex = i
+                exit for
+            end if
+        end for
+    end if
+
+    if sortStr <> invalid then
+        av = sortStr.tokenize(":")
+        if av.count() = 2 then
+            m.SetSort(av.GetHead(), (av.GetTail() = "asc"))
+        end if
+    end if
+
+    if filtersStr <> invalid then
+        args = filtersStr.tokenize("&")
+        for each arg in args
+            av = arg.tokenize("=")
+            key = UrlUnescape(av.GetHead())
+            serializedValues = av.GetTail().tokenize(",")
+            values = []
+            for each serializedVal in serializedValues
+                av = serializedVal.tokenize("!")
+                values.Push({key: av.GetHead(), title: UrlUnescape(av.GetTail())})
+            end for
+            m.SetFilter(key, values)
+        end for
+    end if
+End Sub
 
 Sub foFetchValues(screen)
     m.filtersArr = invalid
@@ -260,12 +299,25 @@ End Sub
 Function foGetUrl()
     builder = NewHttp(m.Section.key + "/all")
 
+    ' Always add type, nice and easy
     builder.AddParam("type", m.GetSelectedType().EnumValue)
 
+    ' For filters, we need to create the query string as well as a special
+    ' value that will be written to the registry to remember the current filters.
+    ' The latter requires both the key and title.
+    filterRegArr = []
     for each key in m.currentFilters
         builder.AddParam(key, JoinArray(m.currentFilters[key], ",", "key"))
-    end for
 
+        titleAndVals = []
+        for each obj in m.currentFilters[key]
+            titleAndVals.Push(obj.key + "!" + HttpEncode(firstOf(obj.OrigTitle, obj.Title)))
+        end for
+        filterRegArr.Push(key + "=" + JoinArray(titleAndVals, ","))
+    end for
+    filterRegString = JoinArray(filterRegArr, "&")
+
+    ' Add the sort key and direction if we have one.
     sortParam = invalid
     for each key in m.currentSorts
         if m.currentSorts[key] then
@@ -275,6 +327,21 @@ Function foGetUrl()
         end if
     end for
     if sortParam <> invalid then builder.AddParam("sort", sortParam)
+
+    ' Write the filters for this section to the registry for next time
+    RegWrite(m.cacheKey + "!type", m.GetSelectedType().EnumValue, "filters")
+
+    if sortParam <> invalid then
+        RegWrite(m.cacheKey + "!sort", sortParam, "filters")
+    else
+        RegDelete(m.cacheKey + "!sort", "filters")
+    end if
+
+    if filterRegString <> "" then
+        RegWrite(m.cacheKey + "!filters", filterRegString, "filters")
+    else
+        RegDelete(m.cacheKey + "!filters", "filters")
+    end if
 
     return builder.Http.GetUrl()
 End Function

@@ -84,8 +84,6 @@ Sub chunkedSetupRows()
         m.totalSize = firstOf(xml@totalSize, "0").toInt()
     end if
 
-    ' TODO(schuyler): Make sure we handle empty sections reasonably
-
     firstRowContent = firstOf(m.rowContent[0], [])
     m.names.Clear()
     m.rowContent.Clear()
@@ -100,6 +98,9 @@ Sub chunkedSetupRows()
             m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr((i + 1) * m.rowSize))
             m.rowContent[i + 1] = []
         next
+    else
+        m.names.Push("No items found")
+        m.rowContent[1] = []
     end if
 End Sub
 
@@ -110,6 +111,7 @@ Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
 
         if m.Listener <> invalid then
             m.Listener.OnDataLoaded(0, m.rowContent[0], 0, m.rowContent[0].Count(), true)
+            if m.totalSize = 0 then m.Listener.Screen.SetFocusedListItem(0, 0)
         end if
     end if
 

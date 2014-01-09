@@ -49,7 +49,11 @@ End Function
 
 '* Convenience method to create a grid screen with a loader for the specified item
 Function createGridScreenForItem(item, viewController, style) As Object
-    obj = createGridScreen(viewController, style)
+    if item.Filters = "1" then
+        obj = createGridScreen(viewController, style, "stop")
+    else
+        obj = createGridScreen(viewController, style)
+    end if
 
     obj.Item = item
 

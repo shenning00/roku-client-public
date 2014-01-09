@@ -12,6 +12,7 @@ Sub initDataLoader(loader)
     loader.GetLoadStatus = baseGetLoadStatus
     loader.GetPendingRequestCount = baseGetPendingRequestCount
     loader.RefreshData = baseRefreshData
+    loader.GetContextAndIndexForItem = baseGetContextAndIndexForItem
 
     loader.Listener = invalid
 End Sub
@@ -52,4 +53,8 @@ Function createDummyLoader()
     initDataLoader(loader)
     loader.names[0] = ""
     return loader
+End Function
+
+Function baseGetContextAndIndexForItem(row, column)
+    return invalid
 End Function

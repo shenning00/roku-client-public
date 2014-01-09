@@ -40,6 +40,7 @@ Function createGridScreen(viewController, style="flat-movie", upBehavior="exit")
     screen.hasBeenFocused = false
     screen.ignoreNextFocus = false
     screen.recreating = false
+    screen.filtered = false
 
     screen.OnDataLoaded = gridOnDataLoaded
     screen.InitializeRows = gridInitializeRows
@@ -61,6 +62,7 @@ Function createGridScreenForItem(item, viewController, style) As Object
         ' TODO(schuyler): row size based on m.gridStyle?
         obj.Loader = createChunkedLoader(item, 5)
         obj.Loader.Listener = obj
+        obj.filtered = true
     else
         container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
         container.SeparateSearchItems = true
@@ -146,18 +148,18 @@ Function gridHandleMessage(msg) As Boolean
     if type(msg) = "roGridScreenEvent" then
         handled = true
         if msg.isListItemSelected() then
-            context = m.contentArray[msg.GetIndex()]
-            index = msg.GetData()
-
-            ' TODO(schuyler): How many levels of breadcrumbs do we want to
-            ' include here. For example, if I'm in a TV section and select
-            ' a series from Recently Viewed Shows, should the breadcrumbs
-            ' on the next screen be "Section - Show Name" or "Recently
-            ' Viewed Shows - Show Name"?
+            arr = m.Loader.GetContextAndIndexForItem(msg.GetIndex(), msg.GetData())
+            if arr = invalid then
+                context = m.contentArray[msg.GetIndex()]
+                index = msg.GetData()
+            else
+                context = arr[0]
+                index = arr[1]
+            end if
 
             item = context[index]
             if item <> invalid then
-                if item.ContentType = "series" then
+                if item.ContentType = "series" OR m.filtered then
                     breadcrumbs = [item.Title]
                 else if item.ContentType = "section" then
                     breadcrumbs = [item.server.name, item.Title]

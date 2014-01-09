@@ -19,6 +19,7 @@ Function createChunkedLoader(item, rowSize)
     loader.GetLoadStatus = chunkedGetLoadStatus
     loader.GetPendingRequestCount = chunkedGetPendingRequestCount
     loader.RefreshData = chunkedRefreshData
+    loader.GetContextAndIndexForItem = chunkedGetContextAndIndexForItem
 
     loader.StartRequest = chunkedStartRequest
     loader.OnUrlEvent = chunkedOnUrlEvent
@@ -142,6 +143,19 @@ Sub chunkedRefreshData()
         m.Listener.OnDataLoaded(0, m.rowContent[0], 0, m.rowContent[0].Count(), true)
     end if
 End Sub
+
+Function chunkedGetContextAndIndexForItem(row, column)
+    result = []
+    if row = 0 then
+        result[0] = [m.rowContent[0][column]]
+        result[1] = 0
+    else
+        result[0] = m.masterContent
+        result[1] = (row - 1) * m.rowSize + column
+    end if
+
+    return result
+End Function
 
 Sub chunkedStartRequest()
     if m.loadedSize >= m.totalSize then return

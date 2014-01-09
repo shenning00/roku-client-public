@@ -89,6 +89,7 @@ Sub chunkedSetupRows()
     firstRowContent = firstOf(m.rowContent[0], [])
     m.names.Clear()
     m.rowContent.Clear()
+    m.masterContent.Clear()
     m.names.Push("Misc")
     m.rowContent[0] = firstRowContent
 

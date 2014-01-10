@@ -37,6 +37,7 @@ Function createViewController() As Object
     controller.PushScreen = vcPushScreen
     controller.PopScreen = vcPopScreen
     controller.IsActiveScreen = vcIsActiveScreen
+    controller.GetActiveScreen = vcGetActiveScreen
 
     controller.afterCloseCallback = invalid
     controller.CloseScreenWithCallback = vcCloseScreenWithCallback
@@ -139,7 +140,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screenName = "Preplay " + contentType
     else if contentType = "series" then
         if RegRead("use_grid_for_series", "preferences", "") <> "" then
-            screen = createGridScreenForItem(item, m, "flat-16X9")
+            screen = createGridScreenForItem(item, m, "landscape")
             screenName = "Series Grid"
         else
             screen = createPosterScreen(item, m)
@@ -170,10 +171,10 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     else if contentType = "section" then
         RegWrite("lastMachineID", item.server.machineID)
         RegWrite("lastSectionKey", item.key)
-        screen = createGridScreenForItem(item, m, "flat-movie")
+        screen = createGridScreenForItem(item, m)
         screenName = "Section: " + tostr(item.type)
     else if contentType = "playlists" then
-        screen = createGridScreenForItem(item, m, "flat-16X9")
+        screen = createGridScreenForItem(item, m, "landscape")
         screenName = "Playlist Grid"
     else if contentType = "photo" then
         if right(item.key, 8) = "children" then
@@ -190,7 +191,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen = createSearchScreen(item, m)
         screenName = "Search"
     else if item.key = "/system/appstore" then
-        screen = createGridScreenForItem(item, m, "flat-square")
+        screen = createGridScreenForItem(item, m)
         screenName = "Channel Directory"
     else if viewGroup = "Store:Info" then
         dialog = createPopupMenu(item)
@@ -206,7 +207,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screenName = "Filters"
     else if item.key = "/channels/all" then
         ' Special case for all channels to force it into a special grid view
-        screen = createGridScreen(m, "flat-square")
+        screen = createGridScreen(m)
         names = ["Video Channels", "Music Channels", "Photo Channels"]
         keys = ["/video", "/music", "/photos"]
         fakeContainer = createFakePlexContainer(item.server, names, keys)
@@ -215,7 +216,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen.Loader.Port = screen.Port
         screenName = "All Channels"
     else if item.searchTerm <> invalid AND item.server = invalid then
-        screen = createGridScreen(m, "flat-square")
+        screen = createGridScreen(m)
         screen.Loader = createSearchLoader(item.searchTerm)
         screen.Loader.Listener = screen
         screenName = "Search Results"
@@ -566,6 +567,15 @@ Function vcIsActiveScreen(screen) As Boolean
     return m.screens.Peek().ScreenID = screen.ScreenID
 End Function
 
+Function vcGetActiveScreen()
+    screen = m.screens.Peek()
+    if screen = invalid then
+        return invalid
+    else
+        return screen.screen
+    end if
+End Function
+
 Sub vcCloseScreenWithCallback(callback)
     m.afterCloseCallback = callback
     m.screens.Peek().Screen.Close()
@@ -598,8 +608,10 @@ Sub vcShow()
             ' Printing debug information about every message may be overkill
             ' regardless, but note that URL events don't play by the same rules,
             ' and there's no ifEvent interface to check for. Sigh.
-            'if GetInterface(msg, "ifUrlEvent") = invalid AND GetInterface(msg, "ifSocketEvent") = invalid then
-                'Debug("Processing " + type(msg) + " (top of stack " + type(m.screens.Peek().Screen) + "): " + tostr(msg.GetType()) + ", " + tostr(msg.GetIndex()) + ", " + tostr(msg.GetMessage()))
+            'if type(msg) = "roUrlEvent" OR type(msg) = "roSocketEvent" OR type(msg) = "roChannelStoreEvent" then
+            '    Debug("Processing " + type(msg) + " (top of stack " + type(m.GetActiveScreen()) + ")")
+            'else
+            '    Debug("Processing " + type(msg) + " (top of stack " + type(m.GetActiveScreen()) + "): " + tostr(msg.GetType()) + ", " + tostr(msg.GetIndex()) + ", " + tostr(msg.GetMessage()))
             'end if
 
             for i = m.screens.Count() - 1 to 0 step -1

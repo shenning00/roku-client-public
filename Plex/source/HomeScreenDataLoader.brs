@@ -30,24 +30,25 @@ Function createHomeScreenDataLoader(listener)
 
     loader.contentArray = []
     loader.RowNames = []
+    loader.styles = []
     loader.RowIndexes = {}
     loader.FirstLoad = true
     loader.FirstServer = true
 
     rows = [
-        { title: "Channels", key: "channels" },
-        { title: "Library Sections", key: "sections" },
-        { title: "On Deck", key: "on_deck" },
-        { title: "Recently Added", key: "recently_added" },
-        { title: "Queue", key: "queue" },
-        { title: "Recommendations", key: "recommendations" },
-        { title: "Shared Library Sections", key: "shared_sections" },
-        { title: "Miscellaneous", key: "misc" }
+        { title: "Channels", key: "channels", style: "square" },
+        { title: "Library Sections", key: "sections", style: "square" },
+        { title: "On Deck", key: "on_deck", style: "portrait" },
+        { title: "Recently Added", key: "recently_added", style: "portrait" },
+        { title: "Queue", key: "queue", style: "landscape" },
+        { title: "Recommendations", key: "recommendations", style: "landscape" },
+        { title: "Shared Library Sections", key: "shared_sections", style: "square" },
+        { title: "Miscellaneous", key: "misc", style: "square" }
     ]
     ReorderItemsByKeyPriority(rows, RegRead("home_row_order", "preferences", ""))
 
     for each row in rows
-        loader.RowIndexes[row.key] = loader.CreateRow(row.title)
+        loader.RowIndexes[row.key] = loader.CreateRow(row.title, row.style)
     next
 
     ' Kick off myPlex requests if we're signed in.
@@ -102,7 +103,7 @@ Function createHomeScreenDataLoader(listener)
     return loader
 End Function
 
-Function homeCreateRow(name) As Integer
+Function homeCreateRow(name, style) As Integer
     index = m.RowNames.Count()
 
     status = CreateObject("roAssociativeArray")
@@ -115,6 +116,7 @@ Function homeCreateRow(name) As Integer
 
     m.contentArray.Push(status)
     m.RowNames.Push(name)
+    m.styles.Push(style)
 
     return index
 End Function

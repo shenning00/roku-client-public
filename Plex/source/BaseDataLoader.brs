@@ -6,9 +6,11 @@
 
 Sub initDataLoader(loader)
     loader.names = []
+    loader.styles = ["square"]
 
     loader.LoadMoreContent = baseLoadMoreContent
     loader.GetNames = baseGetNames
+    loader.GetRowStyles = baseGetRowStyles
     loader.GetLoadStatus = baseGetLoadStatus
     loader.GetPendingRequestCount = baseGetPendingRequestCount
     loader.RefreshData = baseRefreshData
@@ -28,6 +30,10 @@ End Function
 
 Function baseGetNames()
     return m.names
+End Function
+
+Function baseGetRowStyles()
+    return m.styles
 End Function
 
 '*

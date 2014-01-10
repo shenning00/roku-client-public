@@ -103,6 +103,11 @@ Sub chunkedSetupRows()
         m.names.Push("No items found")
         m.rowContent[1] = []
     end if
+
+    ' Set up row styles. The last element will be reused for all remaining rows,
+    ' so we can simply set the first row to square and then do the right thing
+    ' based on section type.
+    m.styles = ["square", m.FilterOptions.GetSelectedType().gridStyle]
 End Sub
 
 Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
@@ -120,7 +125,7 @@ Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
 End Function
 
 Function chunkedGetLoadStatus(row) As Integer
-    if m.rowContent[row].Count() > 0 then
+    if m.hasStartedLoading AND m.rowContent[row].Count() > 0 then
         return 2
     else
         return 0

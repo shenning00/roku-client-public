@@ -2,10 +2,8 @@
 '* A grid screen backed by XML from a PMS.
 '*
 
-Function createGridScreen(viewController, style="flat-movie", upBehavior="exit") As Object
+Function createGridScreen(viewController) As Object
     Debug("######## Creating Grid Screen ########")
-
-    setGridTheme(style)
 
     screen = CreateObject("roAssociativeArray")
 
@@ -14,12 +12,8 @@ Function createGridScreen(viewController, style="flat-movie", upBehavior="exit")
     grid = CreateObject("roGridScreen")
     grid.SetMessagePort(screen.Port)
 
-    ' If we don't know exactly what we're displaying, scale-to-fit looks the
-    ' best. Anything else makes something look horrible when the grid has
-    ' some combination of posters and video frames.
-    grid.SetDisplayMode("scale-to-fit")
-    grid.SetGridStyle(style)
-    grid.SetUpBehaviorAtTopRow(upBehavior)
+    grid.SetDisplayMode("photo-fit")
+    grid.SetGridStyle("mixed-aspect-ratio")
 
     ' Standard properties for all our Screen types
     screen.Screen = grid
@@ -34,8 +28,7 @@ Function createGridScreen(viewController, style="flat-movie", upBehavior="exit")
     screen.focusedIndex = 0
     screen.contentArray = []
     screen.lastUpdatedSize = []
-    screen.gridStyle = style
-    screen.upBehavior = upBehavior
+    screen.rowVisibility = []
     screen.hasData = false
     screen.hasBeenFocused = false
     screen.ignoreNextFocus = false
@@ -49,24 +42,26 @@ Function createGridScreen(viewController, style="flat-movie", upBehavior="exit")
 End Function
 
 '* Convenience method to create a grid screen with a loader for the specified item
-Function createGridScreenForItem(item, viewController, style) As Object
-    if item.Filters = "1" then
-        obj = createGridScreen(viewController, style, "stop")
-    else
-        obj = createGridScreen(viewController, style)
-    end if
+Function createGridScreenForItem(item, viewController, style="square") As Object
+    obj = createGridScreen(viewController)
 
     obj.Item = item
 
     if item.Filters = "1" then
-        ' TODO(schuyler): row size based on m.gridStyle?
-        obj.Loader = createChunkedLoader(item, 5)
+        if GetGlobal("IsHD") then
+            rowSize = 5
+        else
+            rowSize = 4
+        end if
+
+        obj.Loader = createChunkedLoader(item, rowSize)
         obj.Loader.Listener = obj
         obj.filtered = true
     else
         container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
         container.SeparateSearchItems = true
         obj.Loader = createPaginatedLoader(container, 8, 75)
+        obj.Loader.styles = [style]
         obj.Loader.Listener = obj
     end if
 
@@ -80,9 +75,10 @@ Function createGridScreenForItem(item, viewController, style) As Object
     return obj
 End Function
 
-Function gridInitializeRows()
+Function gridInitializeRows(clear=true)
     names = m.Loader.GetNames()
-    m.contentArray.Clear()
+    styles = m.Loader.GetRowStyles()
+    if clear then m.contentArray.Clear()
 
     if names.Count() = 0 then
         Debug("Nothing to load for grid")
@@ -96,8 +92,17 @@ Function gridInitializeRows()
         return false
     end if
 
+    lastStyle = "square"
+    rowStyles = []
+    for i = 0 to names.Count() - 1
+        if i < styles.Count() then lastStyle = styles[i]
+        rowStyles.Push(lastStyle)
+    end for
+
     m.Screen.SetupLists(names.Count())
     m.Screen.SetListNames(names)
+    m.Screen.SetListPosterStyles(rowStyles)
+    m.rowVisibility = []
 
     ' If we already "loaded" an empty row, we need to set the list visibility now
     ' that we've setup the lists.
@@ -107,8 +112,13 @@ Function gridInitializeRows()
         m.Screen.SetContentList(row, m.contentArray[row])
         if m.lastUpdatedSize[row] = 0 AND m.Loader.GetLoadStatus(row) = 2 then
             m.Screen.SetListVisible(row, false)
+            m.rowVisibility[row] = false
+        else
+            m.rowVisibility[row] = true
         end if
     end for
+
+    if m.filtered then m.Screen.SetFocusedListItem(1, 0)
 
     return true
 End Function
@@ -176,18 +186,20 @@ Function gridHandleMessage(msg) As Boolean
             ' If the user is getting close to the limit of what we've
             ' preloaded, make sure we kick off another update.
 
-            m.selectedRow = msg.GetIndex()
-            m.focusedIndex = msg.GetData()
-
-            if m.ignoreNextFocus then
-                m.ignoreNextFocus = false
-            else
-                m.hasBeenFocused = true
-            end if
-
-            if m.selectedRow < 0 OR m.selectedRow >= m.contentArray.Count() then
+            ' Sanity check the focused coordinates, Roku loves to send bogus values
+            if msg.GetIndex() < 0 OR msg.GetIndex() >= m.contentArray.Count() then
                 Debug("Ignoring grid ListItemFocused event for bogus row: " + tostr(msg.GetIndex()))
             else
+                m.Screen.SetDescriptionVisible(true)
+                m.selectedRow = msg.GetIndex()
+                m.focusedIndex = msg.GetData()
+
+                if m.ignoreNextFocus then
+                    m.ignoreNextFocus = false
+                else
+                    m.hasBeenFocused = true
+                end if
+
                 lastUpdatedSize = m.lastUpdatedSize[m.selectedRow]
                 if m.focusedIndex + 10 > lastUpdatedSize AND m.contentArray[m.selectedRow].Count() > lastUpdatedSize then
                     data = m.contentArray[m.selectedRow]
@@ -223,9 +235,11 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
 
     ' Don't bother showing empty rows
     if data.Count() = 0 then
-        if m.Screen <> invalid then
+        if m.Screen <> invalid AND m.Loader.GetLoadStatus(row) = 2 then
+            ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
             m.Screen.SetListVisible(row, false)
             m.Screen.SetContentList(row, data)
+            m.rowVisibility[row] = false
         end if
 
         if NOT m.hasData then
@@ -274,7 +288,13 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
 
         return
     else if count > 0 AND m.Screen <> invalid then
-        m.Screen.SetListVisible(row, true)
+        ' CAUTION: Making a previously hidden row visible on a
+        ' mixed-aspect-ratio grid has been known to crash some (beta) firmware
+        ' versions.
+        if NOT m.rowVisibility[row] then
+            Debug("Desperately wanted to make row " + tostr(row) + " visible, but too afraid to try")
+            'm.Screen.SetListVisible(row, true)
+        end if
     end if
 
     m.hasData = true
@@ -301,23 +321,6 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
     extraRows = 2 - (m.selectedRow - row)
     if extraRows >= 0 AND extraRows <= 2 then
         m.Loader.LoadMoreContent(row, extraRows)
-    end if
-End Sub
-
-Sub setGridTheme(style as String)
-    ' This has to be done before the CreateObject call. Once the grid has
-    ' been created you can change its style, but you can't change its theme.
-
-    app = CreateObject("roAppManager")
-    if style = "flat-square" then
-        app.SetThemeAttribute("GridScreenFocusBorderHD", "pkg:/images/border-square-hd.png")
-        app.SetThemeAttribute("GridScreenFocusBorderSD", "pkg:/images/border-square-sd.png")
-    else if style = "flat-16X9" then
-        app.SetThemeAttribute("GridScreenFocusBorderHD", "pkg:/images/border-episode-hd.png")
-        app.SetThemeAttribute("GridScreenFocusBorderSD", "pkg:/images/border-episode-sd.png")
-    else if style = "flat-movie" then
-        app.SetThemeAttribute("GridScreenFocusBorderHD", "pkg:/images/border-movie-hd.png")
-        app.SetThemeAttribute("GridScreenFocusBorderSD", "pkg:/images/border-movie-sd.png")
     end if
 End Sub
 
@@ -362,25 +365,14 @@ Sub gridActivate(priorScreen)
     ' If our screen was destroyed by some child screen, recreate it now
     if m.Screen = invalid then
         Debug("Recreating grid...")
-        setGridTheme(m.gridStyle)
         m.Screen = CreateObject("roGridScreen")
         m.Screen.SetMessagePort(m.Port)
-        m.Screen.SetDisplayMode("scale-to-fit")
-        m.Screen.SetGridStyle(m.gridStyle)
-        m.Screen.SetUpBehaviorAtTopRow(m.upBehavior)
-
-        names = m.Loader.GetNames()
-        m.Screen.SetupLists(names.Count())
-        m.Screen.SetListNames(names)
+        m.Screen.SetDisplayMode("photo-fit")
+        m.Screen.SetGridStyle("mixed-aspect-ratio")
 
         m.ViewController.UpdateScreenProperties(m)
 
-        for row = 0 to names.Count() - 1
-            m.Screen.SetContentList(row, m.contentArray[row])
-            if m.contentArray[row].Count() = 0 AND m.Loader.GetLoadStatus(row) = 2 then
-                m.Screen.SetListVisible(row, false)
-            end if
-        end for
+        m.InitializeRows(false)
         m.Screen.SetFocusedListItem(m.selectedRow, m.focusedIndex)
 
         m.Screen.Show()

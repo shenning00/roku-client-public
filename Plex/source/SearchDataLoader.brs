@@ -15,6 +15,7 @@ Function createSearchLoader(searchTerm)
     loader.SearchTerm = searchTerm
 
     loader.contentArray = []
+    loader.styles = []
     loader.PendingRequests = 0
     loader.FirstLoad = true
     loader.StartedRequests = false
@@ -25,19 +26,19 @@ Function createSearchLoader(searchTerm)
     loader.OnUrlEvent = searchOnUrlEvent
 
     ' Create rows for each of our fixed buckets.
-    loader.MovieRow = loader.CreateRow("Movies", "movie")
-    loader.ShowRow = loader.CreateRow("Shows", "show")
-    loader.EpisodeRow = loader.CreateRow("Episodes", "episode")
-    loader.ArtistRow = loader.CreateRow("Artists", "artist")
-    loader.AlbumRow = loader.CreateRow("Albums", "album")
-    loader.TrackRow = loader.CreateRow("Tracks", "track")
-    loader.ActorRow = loader.CreateRow("Actors", "person")
-    loader.ClipRow = loader.CreateRow("Clips", "clip")
+    loader.MovieRow = loader.CreateRow("Movies", "movie", "portrait")
+    loader.ShowRow = loader.CreateRow("Shows", "show", "portrait")
+    loader.EpisodeRow = loader.CreateRow("Episodes", "episode", "portrait")
+    loader.ArtistRow = loader.CreateRow("Artists", "artist", "square")
+    loader.AlbumRow = loader.CreateRow("Albums", "album", "square")
+    loader.TrackRow = loader.CreateRow("Tracks", "track", "square")
+    loader.ActorRow = loader.CreateRow("Actors", "person", "portrait")
+    loader.ClipRow = loader.CreateRow("Clips", "clip", "landscape")
 
     return loader
 End Function
 
-Function searchCreateRow(name, typeStr)
+Function searchCreateRow(name, typeStr, style)
     index = m.names.Count()
 
     status = CreateObject("roAssociativeArray")
@@ -45,6 +46,7 @@ Function searchCreateRow(name, typeStr)
     status.numLoaded = 0
     m.contentArray.Push(status)
     m.names.Push(name)
+    m.styles.Push(style)
 
     m.ContentTypes[typeStr] = index
 
@@ -80,13 +82,13 @@ Function searchLoadMoreContent(focusedRow, extraRows=0) As Boolean
     if m.FirstLoad then
         m.FirstLoad = false
 
+        for each server in GetOwnedPlexMediaServers()
+            m.StartRequest(server, "/search", "Root")
+        next
+
         for i = 0 to m.contentArray.Count() - 1
             content = m.contentArray[i].content
             m.Listener.OnDataLoaded(i, content, 0, content.Count(), true)
-        next
-
-        for each server in GetOwnedPlexMediaServers()
-            m.StartRequest(server, "/search", "Root")
         next
 
         m.StartedRequests = true
@@ -163,6 +165,8 @@ Sub searchOnUrlEvent(msg, requestContext)
         if status.numLoaded > 0 then
             m.Listener.OnDataLoaded(i, status.content, status.content.Count() - status.numLoaded, status.numLoaded, true)
             status.numLoaded = 0
+        else if m.PendingRequests = 0 AND status.content.Count() = 0 then
+            m.Listener.OnDataLoaded(i, status.content, 0, status.content.Count(), true)
         end if
     next
 

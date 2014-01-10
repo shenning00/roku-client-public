@@ -5,10 +5,10 @@ Function createFilterOptions(section)
 
     if m.MetadataTypesBySectionType = invalid then
         m.MetadataTypesBySectionType = {}
-        m.MetadataTypesBySectionType["movie"] = [{title: "Movie", EnumValue: "1"}]
-        m.MetadataTypesBySectionType["show"] = [{title: "Show", EnumValue: "2"}, {title: "Episode", EnumValue: "4"}]
-        m.MetadataTypesBySectionType["artist"] = [{title: "Artist", EnumValue: "8"}, {title: "Album", EnumValue: "9"}]
-        m.MetadataTypesBySectionType["photo"] = [{title: "Photo", EnumValue: "13"}]
+        m.MetadataTypesBySectionType["movie"] = [{title: "Movie", EnumValue: "1", gridStyle: "portrait"}]
+        m.MetadataTypesBySectionType["show"] = [{title: "Show", EnumValue: "2", gridStyle: "portrait"}, {title: "Episode", EnumValue: "4", gridStyle: "portrait"}]
+        m.MetadataTypesBySectionType["artist"] = [{title: "Artist", EnumValue: "8", gridStyle: "square"}, {title: "Album", EnumValue: "9", gridStyle: "square"}]
+        m.MetadataTypesBySectionType["photo"] = [{title: "Photo", EnumValue: "13", gridStyle: "square"}]
     end if
 
     obj.types = firstOf(m.MetadataTypesBySectionType[section.type], [])

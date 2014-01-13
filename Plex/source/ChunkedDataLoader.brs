@@ -94,9 +94,14 @@ Sub chunkedSetupRows()
 
     if m.totalSize > 0 then
         numRows% = ((m.totalSize - 1) / m.rowSize) + 1
+        suffix = " of " + tostr(m.totalSize)
 
         for i = 0 to numRows% - 1
-            m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr((i + 1) * m.rowSize))
+            if i = numRows% - 1 then
+                m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr(m.totalSize) + suffix)
+            else
+                m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr((i + 1) * m.rowSize) + suffix)
+            end if
             m.rowContent[i + 1] = []
         next
     else

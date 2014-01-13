@@ -9,7 +9,6 @@ Function createChunkedLoader(item, rowSize)
 
     loader.server = item.server
     loader.sourceUrl = item.sourceUrl
-    loader.key = item.key + "/all"
     loader.rowSize = rowSize
 
     loader.masterContent = []
@@ -28,46 +27,64 @@ Function createChunkedLoader(item, rowSize)
     loader.loadedSize = 0
     loader.hasStartedLoading = false
 
-    loader.FilterOptions = createFilterOptions(item)
-
+    loader.GetUrl = chunkedGetUrl
     loader.SetupRows = chunkedSetupRows
-    loader.SetupRows()
 
-    ' Add a dummy item for bringing up the filters screen.
-    filters = CreateObject("roAssociativeArray")
-    filters.server = item.server
-    filters.sourceUrl = FullUrl(item.server.serverUrl, item.sourceUrl, item.key)
-    filters.ContentType = "filters"
-    filters.Key = "_filters_"
-    filters.Title = "Filters"
-    filters.SectionType = item.ContentType
-    filters.ShortDescriptionLine1 = "Filters"
-    filters.Description = "Filter content in this section"
-    filters.SDPosterURL = "file://pkg:/images/gear.png"
-    filters.HDPosterURL = "file://pkg:/images/gear.png"
-    filters.FilterOptions = loader.FilterOptions
-    loader.rowContent[0].Push(filters)
+    if item.Filters = "1" then
+        loader.key = item.key + "/all"
+        loader.miscRows = 1
+        loader.FilterOptions = createFilterOptions(item)
 
-    ' Make a blocking request to load the container in order to populate the
-    ' first row with things like On Deck and Search.
-    container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
-    container.SeparateSearchItems = true
+        loader.SetupRows()
 
-    if m.MiscShortcutKeys = invalid then
-        m.MiscShortcutKeys = CreateObject("roAssociativeArray")
-        m.MiscShortcutKeys["onDeck"] = true
-        m.MiscShortcutKeys["folder"] = true
+        ' Add a dummy item for bringing up the filters screen.
+        filters = CreateObject("roAssociativeArray")
+        filters.server = item.server
+        filters.sourceUrl = FullUrl(item.server.serverUrl, item.sourceUrl, item.key)
+        filters.ContentType = "filters"
+        filters.Key = "_filters_"
+        filters.Title = "Filters"
+        filters.SectionType = item.ContentType
+        filters.ShortDescriptionLine1 = "Filters"
+        filters.Description = "Filter content in this section"
+        filters.SDPosterURL = "file://pkg:/images/gear.png"
+        filters.HDPosterURL = "file://pkg:/images/gear.png"
+        filters.FilterOptions = loader.FilterOptions
+        loader.rowContent[0].Push(filters)
+
+        ' Make a blocking request to load the container in order to populate the
+        ' first row with things like On Deck and Search.
+        container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
+        container.SeparateSearchItems = true
+
+        if m.MiscShortcutKeys = invalid then
+            m.MiscShortcutKeys = CreateObject("roAssociativeArray")
+            m.MiscShortcutKeys["onDeck"] = true
+            m.MiscShortcutKeys["folder"] = true
+        end if
+
+        for each node in container.GetMetadata()
+            if m.MiscShortcutKeys.DoesExist(node.key) then
+                loader.rowContent[0].Push(node)
+            end if
+        next
+
+        loader.rowContent[0].Append(container.GetSearch())
+    else
+        loader.key = item.key
+        loader.miscRows = 0
+        loader.SetupRows()
     end if
 
-    for each node in container.GetMetadata()
-        if m.MiscShortcutKeys.DoesExist(node.key) then
-            loader.rowContent[0].Push(node)
-        end if
-    next
-
-    loader.rowContent[0].Append(container.GetSearch())
-
     return loader
+End Function
+
+Function chunkedGetUrl()
+    if m.FilterOptions <> invalid then
+        return m.FilterOptions.GetUrl()
+    else
+        return m.key
+    end if
 End Function
 
 Sub chunkedSetupRows()
@@ -76,7 +93,7 @@ Sub chunkedSetupRows()
 
     ' Make a blocking request to figure out the total item count and initialize
     ' our arrays.
-    request = m.server.CreateRequest(m.sourceUrl, m.FilterOptions.GetUrl())
+    request = m.server.CreateRequest(m.sourceUrl, m.GetUrl())
     request.AddHeader("X-Plex-Container-Start", "0")
     request.AddHeader("X-Plex-Container-Size", "0")
     response = GetToStringWithTimeout(request, 60)
@@ -89,8 +106,10 @@ Sub chunkedSetupRows()
     m.names.Clear()
     m.rowContent.Clear()
     m.masterContent.Clear()
-    m.names.Push("Misc")
-    m.rowContent[0] = firstRowContent
+    for i = 0 to m.miscRows - 1
+        m.names.Push("Misc")
+        m.rowContent[i] = firstRowContent
+    end for
 
     if m.totalSize > 0 then
         numRows% = ((m.totalSize - 1) / m.rowSize) + 1
@@ -102,17 +121,26 @@ Sub chunkedSetupRows()
             else
                 m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr((i + 1) * m.rowSize) + suffix)
             end if
-            m.rowContent[i + 1] = []
+            m.rowContent[i + m.miscRows] = []
         next
-    else
+    else if m.miscRows > 0 then
         m.names.Push("No items found")
-        m.rowContent[1] = []
+        m.rowContent[m.miscRows] = []
     end if
 
     ' Set up row styles. The last element will be reused for all remaining rows,
     ' so we can simply set the first row to square and then do the right thing
     ' based on section type.
-    m.styles = ["square", m.FilterOptions.GetSelectedType().gridStyle]
+    m.styles = []
+    for i = 0 to m.miscRows - 1
+        m.styles.Push("square")
+    end for
+    if m.FilterOptions <> invalid then
+        m.styles.Push(m.FilterOptions.GetSelectedType().gridStyle)
+    else
+        ' TODO(schuyler): Set this based on the content type
+        m.styles.Push("square")
+    end if
 End Sub
 
 Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
@@ -121,7 +149,9 @@ Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
         m.hasStartedLoading = true
 
         if m.Listener <> invalid then
-            m.Listener.OnDataLoaded(0, m.rowContent[0], 0, m.rowContent[0].Count(), true)
+            for i = 0 to m.miscRows - 1
+                m.Listener.OnDataLoaded(i, m.rowContent[i], 0, m.rowContent[i].Count(), true)
+            end for
             if m.totalSize = 0 then m.Listener.Screen.SetFocusedListItem(0, 0)
         end if
     end if
@@ -148,20 +178,20 @@ End Function
 Sub chunkedRefreshData()
     if m.Listener <> invalid AND m.Listener.InitializeRows <> invalid then
         m.SetupRows()
+        m.hasStartedLoading = false
         m.Listener.InitializeRows()
-        m.StartRequest()
-        m.Listener.OnDataLoaded(0, m.rowContent[0], 0, m.rowContent[0].Count(), true)
+        m.LoadMoreContent(0, 0)
     end if
 End Sub
 
 Function chunkedGetContextAndIndexForItem(row, column)
     result = []
-    if row = 0 then
-        result[0] = [m.rowContent[0][column]]
+    if row < m.miscRows then
+        result[0] = [m.rowContent[row][column]]
         result[1] = 0
     else
         result[0] = m.masterContent
-        result[1] = (row - 1) * m.rowSize + column
+        result[1] = (row - m.miscRows) * m.rowSize + column
     end if
 
     return result
@@ -179,7 +209,7 @@ Sub chunkedStartRequest()
     end if
 
     request = CreateObject("roAssociativeArray")
-    httpRequest = m.server.CreateRequest(m.sourceUrl, m.FilterOptions.GetUrl())
+    httpRequest = m.server.CreateRequest(m.sourceUrl, m.GetUrl())
     httpRequest.AddHeader("X-Plex-Container-Start", tostr(m.loadedSize))
     httpRequest.AddHeader("X-Plex-Container-Size", tostr(chunkSize))
     request.offset = m.loadedSize
@@ -223,11 +253,11 @@ Sub chunkedOnUrlEvent(msg, requestContext)
         countLoaded = container.Count()
         Debug("Received paginated response for index " + tostr(startItem) + " of list with length " + tostr(countLoaded))
         items = container.GetMetadata()
-        firstRowNum% = (startItem / m.rowSize) + 1
+        firstRowNum% = (startItem / m.rowSize) + m.miscRows
         lastRowNum% = firstRowNum%
         for i = 0 to countLoaded - 1
             m.masterContent[startItem + i] = items[i]
-            rowNum% = ((startItem + i) / m.rowSize) + 1
+            rowNum% = ((startItem + i) / m.rowSize) + m.miscRows
             rowIndex% = (startItem + i) MOD m.rowSize
             m.rowContent[rowNum%][rowIndex%] = items[i]
             lastRowNum% = rowNum%

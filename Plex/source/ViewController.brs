@@ -199,7 +199,11 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         dialog.Show()
         return invalid
     else if viewGroup = "secondary" then
-        screen = createPosterScreen(item, m)
+        if RegRead("enable_filtered_browsing", "preferences", "1") = "1" then
+            screen = createGridScreenForItem(item, m)
+        else
+            screen = createPosterScreen(item, m)
+        end if
     else if item.key = "globalprefs" then
         screen = createPreferencesScreen(m)
         screenName = "Preferences Main"
@@ -231,7 +235,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     end if
 
     if screenName = invalid then
-        screenName = type(screen.Screen) + " " + firstOf(contentType, "unknown")
+        screenName = type(screen.Screen) + " " + firstOf(contentType, "unknown") + " " + firstOf(viewGroup, "unknown")
     end if
 
     screen.ScreenName = screenName

@@ -34,6 +34,7 @@ Function createGridScreen(viewController) As Object
     screen.ignoreNextFocus = false
     screen.recreating = false
     screen.filtered = false
+    screen.ignoreRowNameForBreadcrumbs = false
 
     screen.OnDataLoaded = gridOnDataLoaded
     screen.InitializeRows = gridInitializeRows
@@ -47,7 +48,7 @@ Function createGridScreenForItem(item, viewController, style="square") As Object
 
     obj.Item = item
 
-    if item.Filters = "1" AND RegRead("enable_filtered_browsing", "preferences", "1") = "1" then
+    if RegRead("enable_filtered_browsing", "preferences", "1") = "1" then
         if GetGlobal("IsHD") then
             rowSize = 5
         else
@@ -56,7 +57,8 @@ Function createGridScreenForItem(item, viewController, style="square") As Object
 
         obj.Loader = createChunkedLoader(item, rowSize)
         obj.Loader.Listener = obj
-        obj.filtered = true
+        obj.filtered = (item.Filters = "1")
+        obj.ignoreRowNameForBreadcrumbs = true
     else
         container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
         container.SeparateSearchItems = true
@@ -83,9 +85,9 @@ Function gridInitializeRows(clear=true)
     if names.Count() = 0 then
         Debug("Nothing to load for grid")
         dialog = createBaseDialog()
-        dialog.Facade = facade
-        dialog.Title = "Content Unavailable"
-        dialog.Text = "An error occurred while trying to load this content, make sure the server is running."
+        dialog.Facade = m.Facade
+        dialog.Title = "Section Empty"
+        dialog.Text = "This section doesn't contain any items."
         dialog.Show()
 
         m.popOnActivate = true
@@ -111,6 +113,7 @@ Function gridInitializeRows(clear=true)
         m.lastUpdatedSize[row] = m.contentArray[row].Count()
         m.Screen.SetContentList(row, m.contentArray[row])
         if m.lastUpdatedSize[row] = 0 AND m.Loader.GetLoadStatus(row) = 2 then
+            Debug("Hiding row " + tostr(row) + " in InitializeRows")
             m.Screen.SetListVisible(row, false)
             m.rowVisibility[row] = false
         else
@@ -118,7 +121,7 @@ Function gridInitializeRows(clear=true)
         end if
     end for
 
-    if m.filtered AND RegRead("filter_help_shown", "misc") = invalid then
+    if m.filtered AND RegRead("filter_help_shown", "misc") <> invalid then
         m.Screen.SetFocusedListItem(1, 0)
     end if
 
@@ -126,15 +129,16 @@ Function gridInitializeRows(clear=true)
 End Function
 
 Function showGridScreen() As Integer
-    facade = CreateObject("roGridScreen")
-    facade.Show()
+    m.Facade = CreateObject("roGridScreen")
+    m.Facade.Show()
 
     totalTimer = createTimer()
 
     if NOT m.InitializeRows() then return -1
 
     m.Screen.Show()
-    facade.Close()
+    m.Facade.Close()
+    m.Facade = invalid
 
     ' Only two rows and five items per row are visible on the screen, so
     ' don't load much more than we need to before initially showing the
@@ -176,7 +180,7 @@ Function gridHandleMessage(msg) As Boolean
 
             item = context[index]
             if item <> invalid then
-                if item.ContentType = "series" OR m.filtered then
+                if item.ContentType = "series" OR m.ignoreRowNameForBreadcrumbs then
                     breadcrumbs = [item.Title]
                 else if item.ContentType = "section" then
                     breadcrumbs = [item.server.name, item.Title]
@@ -244,6 +248,7 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
     if data.Count() = 0 then
         if m.Screen <> invalid AND m.Loader.GetLoadStatus(row) = 2 then
             ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
+            Debug("Hiding row " + tostr(row) + " in OnDataLoaded")
             m.Screen.SetListVisible(row, false)
             m.Screen.SetContentList(row, data)
             m.rowVisibility[row] = false

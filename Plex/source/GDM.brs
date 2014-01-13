@@ -184,27 +184,11 @@ Sub gdmAdvertiserCreateSocket()
         return
     end if
 
-    ' Try with the correct address and then with the reversed address
-    addresses = ["239.0.0.250", "239.0.0.250", "250.0.0.239", "250.0.0.239"]
-    success = false
-    for each addr in addresses
-        groupAddr = CreateObject("roSocketAddress")
-        groupAddr.setHostName(addr)
-        groupAddr.setPort(32412)
-
-        if udp.joinGroup(groupAddr) then
-            Debug("Successfully joined multicast group: " + addr)
-            success = true
-            exit for
-        end if
-    next
-
-    if not success then
-        Debug("Failed to join multicast group on GDM advertiser socket")
+    if not udp.setBroadcast(true) then
+        Debug("Failed to set broadcast on GDM advertiser socket")
         return
     end if
 
-    udp.setMulticastLoop(false)
     udp.notifyReadable(true)
     udp.setMessagePort(GetViewController().GlobalMessagePort)
 

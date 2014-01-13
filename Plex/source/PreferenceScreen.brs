@@ -1447,6 +1447,28 @@ Function createSectionDisplayPrefsScreen(viewController) As Object
 
     obj.HandleMessage = prefsSectionDisplayHandleMessage
 
+    ' Enabled filters and the chunked grid?
+    values = [
+        { title: "Enabled", EnumValue: "1" },
+        { title: "Disabled", EnumValue: "0" }
+    ]
+    obj.Prefs["enable_filtered_browsing"] = {
+        values: values,
+        heading: "Use filters when browsing sections?",
+        default: "1"
+    }
+
+    ' Remember last used filter?
+    values = [
+        { title: "Enabled", EnumValue: "1" },
+        { title: "Disabled", EnumValue: "0" }
+    ]
+    obj.Prefs["remember_last_filter"] = {
+        values: values,
+        heading: "Remember last used filter for each section?",
+        default: "1"
+    }
+
     ' Grids or posters for TV series?
     values = [
         { title: "Grid", EnumValue: "1" },
@@ -1489,6 +1511,8 @@ Function createSectionDisplayPrefsScreen(viewController) As Object
 
     obj.Screen.SetHeader("Change the appearance of your sections")
 
+    obj.AddItem({title: "Filtered Browsing"}, "enable_filtered_browsing", obj.GetEnumValue("enable_filtered_browsing"))
+    obj.AddItem({title: "Remember Filters"}, "remember_last_filter", obj.GetEnumValue("remember_last_filter"))
     obj.AddItem({title: "TV Series"}, "use_grid_for_series", obj.GetEnumValue("use_grid_for_series"))
     obj.AddItem({title: "Reorder Rows"}, "section_row_order")
     obj.AddItem({title: "Close"}, "close")
@@ -1506,12 +1530,12 @@ Function prefsSectionDisplayHandleMessage(msg) As Boolean
             m.ViewController.PopScreen(m)
         else if msg.isListItemSelected() then
             command = m.GetSelectedCommand(msg.GetIndex())
-            if command = "use_grid_for_series" then
-                m.HandleEnumPreference(command, msg.GetIndex())
+            if command = "close" then
+                m.Screen.Close()
             else if command = "section_row_order" then
                 m.HandleReorderPreference(command, msg.GetIndex())
-            else if command = "close" then
-                m.Screen.Close()
+            else
+                m.HandleEnumPreference(command, msg.GetIndex())
             end if
         end if
     end if

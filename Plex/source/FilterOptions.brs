@@ -48,7 +48,9 @@ Function createFilterOptions(section)
     obj.cacheKey = tostr(section.server.machineID) + "!" + tostr(section.key)
 
     ' Look for previous filter values for this section
-    obj.InitializeOptionsFromString(RegRead(obj.cacheKey + "!type", "filters"), RegRead(obj.cacheKey + "!sort", "filters"), RegRead(obj.cacheKey + "!filters", "filters"))
+    if RegRead("remember_last_filter", "preferences", "1") = "1" then
+        obj.InitializeOptionsFromString(RegRead(obj.cacheKey + "!type", "filters"), RegRead(obj.cacheKey + "!sort", "filters"), RegRead(obj.cacheKey + "!filters", "filters"))
+    end if
 
     return obj
 End Function
@@ -329,18 +331,20 @@ Function foGetUrl()
     if sortParam <> invalid then builder.AddParam("sort", sortParam)
 
     ' Write the filters for this section to the registry for next time
-    RegWrite(m.cacheKey + "!type", m.GetSelectedType().EnumValue, "filters")
+    if RegRead("remember_last_filter", "preferences", "1") = "1" then
+        RegWrite(m.cacheKey + "!type", m.GetSelectedType().EnumValue, "filters")
 
-    if sortParam <> invalid then
-        RegWrite(m.cacheKey + "!sort", sortParam, "filters")
-    else
-        RegDelete(m.cacheKey + "!sort", "filters")
-    end if
+        if sortParam <> invalid then
+            RegWrite(m.cacheKey + "!sort", sortParam, "filters")
+        else
+            RegDelete(m.cacheKey + "!sort", "filters")
+        end if
 
-    if filterRegString <> "" then
-        RegWrite(m.cacheKey + "!filters", filterRegString, "filters")
-    else
-        RegDelete(m.cacheKey + "!filters", "filters")
+        if filterRegString <> "" then
+            RegWrite(m.cacheKey + "!filters", filterRegString, "filters")
+        else
+            RegDelete(m.cacheKey + "!filters", "filters")
+        end if
     end if
 
     return builder.Http.GetUrl()

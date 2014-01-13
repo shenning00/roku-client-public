@@ -118,7 +118,9 @@ Function gridInitializeRows(clear=true)
         end if
     end for
 
-    if m.filtered then m.Screen.SetFocusedListItem(1, 0)
+    if m.filtered AND RegRead("filter_help_shown", "misc") = invalid then
+        m.Screen.SetFocusedListItem(1, 0)
+    end if
 
     return true
 End Function
@@ -148,6 +150,11 @@ Function showGridScreen() As Integer
     end for
 
     totalTimer.PrintElapsedTime("Total initial grid load")
+
+    if m.filtered AND RegRead("filter_help_shown", "misc") = invalid then
+        m.ignoreOnActivate = true
+        m.ViewController.ShowFilterHelp()
+    end if
 
     return 0
 End Function
@@ -350,7 +357,10 @@ Sub gridDestroyAndRecreate()
 End Sub
 
 Sub gridActivate(priorScreen)
-    if m.popOnActivate then
+    if m.ignoreOnActivate = true then
+        m.ignoreOnActivate = false
+        return
+    else if m.popOnActivate then
         m.ViewController.PopScreen(m)
         return
     else if m.closeOnActivate then

@@ -31,6 +31,7 @@ Function createViewController() As Object
     controller.ShowHelpScreen = vcShowHelpScreen
     controller.ShowLimitedWelcome = vcShowLimitedWelcome
     controller.ShowPlaybackNotAllowed = vcShowPlaybackNotAllowed
+    controller.ShowFilterHelp = vcShowFilterHelp
 
     controller.InitializeOtherScreen = vcInitializeOtherScreen
     controller.AssignScreenID = vcAssignScreenID
@@ -454,6 +455,23 @@ End Sub
 Sub vcShowPlaybackNotAllowed()
     ' TODO(schuyler): Are these different?
     m.ShowLimitedWelcome()
+End Sub
+
+Sub vcShowFilterHelp()
+    RegWrite("filter_help_shown", "1", "misc")
+
+    header = "Section Browsing"
+    paragraphs = []
+    paragraphs.Push("When you first enter a section, you'll see all of your content displayed in a grid. You can press Up on your remote to move up to a special row that allows you to browse your content differently. You can search for specific items, enable filters to only show certain content, and access your On Deck items.")
+    paragraphs.Push("You can customize how sections are displayed in the Preferences, under Section Display.")
+    paragraphs.Push("This message won't be shown again.")
+
+    screen = createParagraphScreen(header, paragraphs, m)
+    m.InitializeOtherScreen(screen, invalid)
+
+    screen.SetButton("close", "OK, got it")
+
+    screen.Show()
 End Sub
 
 Sub vcInitializeOtherScreen(screen, breadcrumbs)

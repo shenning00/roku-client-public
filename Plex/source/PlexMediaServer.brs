@@ -6,7 +6,7 @@
 
 '* Constructor for a specific PMS instance identified via the URL and
 '* human readable name, which can be used in section names
-Function newPlexMediaServer(pmsUrl, pmsName, machineID, useMyPlexToken=true) As Object
+Function newPlexMediaServer(pmsUrl, pmsName, machineID) As Object
     pms = CreateObject("roAssociativeArray")
     pms.serverUrl = pmsUrl
     pms.name = firstOf(pmsName, "Unknown")
@@ -15,11 +15,7 @@ Function newPlexMediaServer(pmsUrl, pmsName, machineID, useMyPlexToken=true) As 
     pms.synced = false
     pms.online = false
     pms.local = false
-    if useMyPlexToken then
-        pms.AccessToken = MyPlexManager().AuthToken
-    else
-        pms.AccessToken = invalid
-    end if
+    pms.AccessToken = invalid
     pms.StopVideo = stopTranscode
     pms.StartTranscode = StartTranscodingSession
     pms.PingTranscode = pingTranscode

@@ -9,15 +9,15 @@ Function createMyPlexPinScreen(viewController As Object) As Object
     screen = CreateObject("roCodeRegistrationScreen")
     screen.SetMessagePort(obj.Port)
 
-    screen.SetTitle("Connect myPlex account")
-    screen.AddParagraph("To access your shared sections and queue, link your Roku player to your myPlex account.")
+    screen.SetTitle("Connect Plex account")
+    screen.AddParagraph("To access your shared sections and queue, link your Roku player to your Plex account.")
     screen.AddParagraph(" ")
     screen.AddFocalText("From your computer,", "spacing-dense")
     screen.AddFocalText("go to plex.tv/pin", "spacing-dense")
     screen.AddFocalText("and enter this code:", "spacing-dense")
     screen.SetRegistrationCode("retrieving code...")
     screen.AddParagraph(" ")
-    screen.AddParagraph("This screen will automatically update once your Roku player has been linked to your myPlex account.")
+    screen.AddParagraph("This screen will automatically update once your Roku player has been linked to your Plex account.")
 
     screen.AddButton(0, "get a new code")
     screen.AddButton(1, "back")
@@ -84,7 +84,7 @@ Sub pinOnUrlEvent(msg, requestContext)
             Debug("Request for new PIN failed: " + tostr(msg.GetResponseCode()) + " - " + tostr(msg.GetFailureReason()))
             dialog = createBaseDialog()
             dialog.Title = "Server unavailable"
-            dialog.Text = "The myPlex server couldn't be reached, please try again later."
+            dialog.Text = "The Plex server couldn't be reached, please try again later."
             dialog.Show()
         else
             m.pollUrl = msg.GetResponseHeaders().Location

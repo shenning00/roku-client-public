@@ -436,10 +436,10 @@ Sub vcShowLimitedWelcome()
     addPurchaseButton = false
 
     if AppManager().IsAvailableForPurchase then
-        paragraphs.Push("To continue using Plex, you can either buy the channel or connect a PlexPass-enabled myPlex account.")
+        paragraphs.Push("To continue using Plex, you can either buy the channel or connect a PlexPass-enabled account.")
         addPurchaseButton = true
     else
-        paragraphs.Push("To continue using Plex, you must connect a PlexPass-enabled myPlex account.")
+        paragraphs.Push("To continue using Plex, you must connect a PlexPass-enabled account.")
     end if
 
     screen = createParagraphScreen(header, paragraphs, m)

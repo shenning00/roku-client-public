@@ -28,6 +28,10 @@ Function RegRead(key, section=invalid, default=invalid)
 End Function
 
 Function RegWrite(key, val, section=invalid)
+    if val = invalid then
+        RegDelete(key, section)
+        return true
+    end if
     if section = invalid then section = "Default"
     sec = CreateObject("roRegistrySection", section)
     sec.Write(key, val)

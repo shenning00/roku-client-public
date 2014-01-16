@@ -38,6 +38,8 @@ Function createGridScreen(viewController) As Object
 
     screen.OnDataLoaded = gridOnDataLoaded
     screen.InitializeRows = gridInitializeRows
+    screen.SetVisibility = gridSetVisibility
+    screen.SetFocusedItem = gridSetFocusedItem
 
     return screen
 End Function
@@ -109,20 +111,18 @@ Function gridInitializeRows(clear=true)
     ' If we already "loaded" an empty row, we need to set the list visibility now
     ' that we've setup the lists.
     for row = 0 to names.Count() - 1
+        m.rowVisibility[row] = true
         if m.contentArray[row] = invalid then m.contentArray[row] = []
         m.lastUpdatedSize[row] = m.contentArray[row].Count()
         m.Screen.SetContentList(row, m.contentArray[row])
         if m.lastUpdatedSize[row] = 0 AND m.Loader.GetLoadStatus(row) = 2 then
             Debug("Hiding row " + tostr(row) + " in InitializeRows")
-            m.Screen.SetListVisible(row, false)
-            m.rowVisibility[row] = false
-        else
-            m.rowVisibility[row] = true
+            m.SetVisibility(row, false)
         end if
     end for
 
     if m.filtered AND RegRead("filter_help_shown", "misc") <> invalid then
-        m.Screen.SetFocusedListItem(1, 0)
+        m.SetFocusedItem(1, 0)
     end if
 
     return true
@@ -249,9 +249,8 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
         if m.Screen <> invalid AND m.Loader.GetLoadStatus(row) = 2 then
             ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
             Debug("Hiding row " + tostr(row) + " in OnDataLoaded")
-            m.Screen.SetListVisible(row, false)
+            m.SetVisibility(row, false)
             m.Screen.SetContentList(row, data)
-            m.rowVisibility[row] = false
         end if
 
         if NOT m.hasData then
@@ -303,10 +302,7 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
         ' CAUTION: Making a previously hidden row visible on a
         ' mixed-aspect-ratio grid has been known to crash some (beta) firmware
         ' versions.
-        if NOT m.rowVisibility[row] then
-            Debug("Desperately wanted to make row " + tostr(row) + " visible, but too afraid to try")
-            'm.Screen.SetListVisible(row, true)
-        end if
+        m.SetVisibility(row, true)
     end if
 
     m.hasData = true
@@ -388,7 +384,7 @@ Sub gridActivate(priorScreen)
         m.ViewController.UpdateScreenProperties(m)
 
         m.InitializeRows(false)
-        m.Screen.SetFocusedListItem(m.selectedRow, m.focusedIndex)
+        m.SetFocusedItem(m.selectedRow, m.focusedIndex)
 
         m.Screen.Show()
     else
@@ -408,5 +404,25 @@ End Sub
 Sub gridOnTimerExpired(timer)
     if timer.Name = "Reactivate" AND m.ViewController.IsActiveScreen(m) then
         m.Activate(invalid)
+    end if
+End Sub
+
+Sub gridSetVisibility(row, visible)
+    if m.rowVisibility[row] = visible then return
+    if visible
+        Debug("Desperately wanted to make row " + tostr(row) + " visible, but too afraid to try")
+    else
+        Debug("Hiding row " + tostr(row))
+        m.rowVisibility[row] = visible
+        m.Screen.SetListVisible(row, visible)
+    end if
+End Sub
+
+Sub gridSetFocusedItem(row, col)
+    if m.rowVisibility[row] = true then
+        Debug("Focusing " + tostr(row) + ", " + tostr(col))
+        m.Screen.SetFocusedListItem(row, col)
+    else
+        Debug("Tried to focus hidden row (" + tostr(row) + "), too afraid to allow it")
     end if
 End Sub

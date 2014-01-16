@@ -19,6 +19,8 @@ Function createHomeScreenDataLoader(listener)
     loader.OnServerDiscovered = homeOnServerDiscovered
     loader.OnMyPlexChange = homeOnMyPlexChange
     loader.RemoveInvalidServers = homeRemoveInvalidServers
+    loader.OnFoundConnection = homeOnFoundConnection
+    loader.UpdatePendingRequestsForConnectionTesting = homeUpdatePendingRequestsForConnectionTesting
 
     loader.CreateRow = homeCreateRow
     loader.CreateServerRequests = homeCreateServerRequests
@@ -54,6 +56,8 @@ Function createHomeScreenDataLoader(listener)
     ' Kick off myPlex requests if we're signed in.
     if MyPlexManager().IsSignedIn then
         loader.CreateMyPlexRequests(false)
+        loader.UpdatePendingRequestsForConnectionTesting(true, true)
+        loader.UpdatePendingRequestsForConnectionTesting(false, true)
     end if
 
     ' Kick off an asynchronous GDM discover.
@@ -61,6 +65,12 @@ Function createHomeScreenDataLoader(listener)
         loader.GDM = createGDMDiscovery(GetViewController().GlobalMessagePort, loader)
         if loader.GDM = invalid then
             Debug("Failed to create GDM discovery object")
+        else
+            loader.UpdatePendingRequestsForConnectionTesting(true, true)
+            timer = createTimer()
+            timer.Name = "GDMRequests"
+            timer.SetDuration(5000)
+            GetViewController().AddTimer(timer, loader)
         end if
     end if
 
@@ -68,7 +78,8 @@ Function createHomeScreenDataLoader(listener)
     configuredServers = PlexMediaServers()
     Debug("Setting up home screen content, server count: " + tostr(configuredServers.Count()))
     for each server in configuredServers
-        loader.CreateServerRequests(server, false, false)
+        server.TestConnections(loader)
+        loader.UpdatePendingRequestsForConnectionTesting(server.owned, true)
     next
 
     ' Create a static item for prefs and put it in the Misc row.
@@ -121,25 +132,11 @@ Function homeCreateRow(name, style) As Integer
     return index
 End Function
 
-Sub homeCreateServerRequests(server As Object, startRequests As Boolean, refreshRequest As Boolean, connectionUrl=invalid)
-    if not refreshRequest then
-        PutPlexMediaServer(server)
-
-        ' Request server details (ensure we have a machine ID, check transcoding
-        ' support, etc.)
-        httpRequest = server.CreateRequest("", "/", true, connectionUrl)
-        context = CreateObject("roAssociativeArray")
-        context.requestType = "server"
-        context.server = server
-        context.connectionUrl = connectionUrl
-        GetViewController().StartRequest(httpRequest, m, context)
-    end if
-
+Sub homeCreateServerRequests(server As Object, startRequests As Boolean)
     ' Request sections
     sections = CreateObject("roAssociativeArray")
     sections.server = server
     sections.key = "/library/sections"
-    sections.connectionUrl = connectionUrl
 
     if server.owned then
         m.AddOrStartRequest(sections, m.RowIndexes["sections"], startRequests)
@@ -154,7 +151,6 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean, refresh
         channels = CreateObject("roAssociativeArray")
         channels.server = server
         channels.key = "/channels/recentlyViewed"
-        channels.connectionUrl = connectionUrl
 
         allChannels = CreateObject("roAssociativeArray")
         allChannels.Title = "More Channels"
@@ -167,7 +163,6 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean, refresh
         allChannels.server = server
         allChannels.sourceUrl = ""
         allChannels.Key = "/channels/all"
-        allChannels.connectionUrl = connectionUrl
         allChannels.SDPosterURL = "file://pkg:/images/more.png"
         allChannels.HDPosterURL = "file://pkg:/images/more.png"
         channels.item = allChannels
@@ -182,7 +177,6 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean, refresh
         onDeck = CreateObject("roAssociativeArray")
         onDeck.server = server
         onDeck.key = "/library/onDeck"
-        onDeck.connectionUrl = connectionUrl
         onDeck.requestType = "media"
         m.AddOrStartRequest(onDeck, m.RowIndexes["on_deck"], startRequests)
     else
@@ -195,7 +189,6 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean, refresh
         recents = CreateObject("roAssociativeArray")
         recents.server = server
         recents.key = "/library/recentlyAdded"
-        recents.connectionUrl = connectionUrl
         recents.requestType = "media"
         m.AddOrStartRequest(recents, m.RowIndexes["recently_added"], startRequests)
     else
@@ -209,7 +202,7 @@ Sub homeCreateMyPlexRequests(startRequests As Boolean)
     if NOT myPlex.IsSignedIn then return
 
     ' Find any servers linked through myPlex
-    httpRequest = myPlex.CreateRequest("", "/pms/servers")
+    httpRequest = myPlex.CreateRequest("", "/pms/servers?includeLite=1")
     context = CreateObject("roAssociativeArray")
     context.requestType = "servers"
     GetViewController().StartRequest(httpRequest, m, context)
@@ -327,7 +320,7 @@ Function homeLoadMoreContent(focusedIndex, extraRows=0)
         m.Listener.ignoreNextFocus = true
 
         if type(m.Listener.Screen) = "roGridScreen" then
-            m.Listener.Screen.SetFocusedListItem(m.RowIndexes["sections"], 0)
+            m.Listener.SetFocusedItem(m.RowIndexes["sections"], 0)
         else
             m.Listener.Screen.SetFocusedListItem(m.RowIndexes["sections"])
         end if
@@ -393,7 +386,7 @@ Function homeLoadMoreContent(focusedIndex, extraRows=0)
             else
                 ' Slightly strange, GDM disabled but no servers configured
                 Debug("No servers, no GDM, and no myPlex...")
-                m.Listener.Screen.SetFocusedListItem(loadingRow, 0)
+                m.Listener.SetFocusedItem(loadingRow, 0)
                 GetViewController().ShowHelpScreen()
                 status.loadStatus = 2
                 m.Listener.OnDataLoaded(loadingRow, status.content, 0, status.content.Count(), true)
@@ -408,6 +401,13 @@ Function homeLoadMoreContent(focusedIndex, extraRows=0)
 End Function
 
 Sub homeOnUrlEvent(msg, requestContext)
+    ' If this was a myPlex servers request, decrement the pending requests count
+    ' regardless of status code.
+    if requestContext.requestType = "servers" then
+        m.UpdatePendingRequestsForConnectionTesting(true, false)
+        m.UpdatePendingRequestsForConnectionTesting(false, false)
+    end if
+
     status = invalid
     if requestContext.row <> invalid then
         status = m.contentArray[requestContext.row]
@@ -555,7 +555,7 @@ Sub homeOnUrlEvent(msg, requestContext)
             Debug("Trying to focus last used section")
             for i = 0 to status.content.Count() - 1
                 if status.content[i].key = m.lastSectionKey then
-                    m.Listener.Screen.SetFocusedListItem(requestContext.row, i)
+                    m.Listener.SetFocusedItem(requestContext.row, i)
                     exit for
                 end if
             next
@@ -628,100 +628,13 @@ Sub homeOnUrlEvent(msg, requestContext)
         status.loadStatus = 2
 
         m.Listener.OnDataLoaded(requestContext.row, status.content, 0, status.content.Count(), true)
-    else if requestContext.requestType = "server" then
-        ' If the machine ID doesn't match what we expected then disregard,
-        ' it was probably a myPlex local address that hasn't been updated.
-        ' If we already have a server then disregard, we might have made
-        ' multiple requests for local addresses and the first one back wins.
-
-        existing = GetPlexMediaServer(xml@machineIdentifier)
-        if server.machineID <> invalid AND server.machineID <> xml@machineIdentifier then
-            Debug("Ignoring server response from unexpected machine ID")
-        else
-            duplicate = false
-            if existing <> invalid then
-                if requestContext.connectionUrl <> invalid then
-                    existing.local = true
-                    Debug("Updating " + tostr(existing.name) + " to use local address: " + requestContext.connectionUrl)
-                    existing.serverUrl = requestContext.connectionUrl
-                end if
-                if existing.online then duplicate = true
-                server = existing
-            end if
-
-            server.name = firstOf(xml@friendlyName, server.name)
-            server.machineID = xml@machineIdentifier
-            server.online = true
-            server.SupportsAudioTranscoding = (xml@transcoderAudio = "1")
-            server.SupportsVideoTranscoding = (xml@transcoderVideoQualities <> invalid)
-            server.SupportsPhotoTranscoding = NOT server.synced
-            server.SupportsUniversalTranscoding = ServerVersionCompare(xml@version, [0, 9, 7, 15])
-            server.AllowsMediaDeletion = server.owned AND (xml@allowMediaDeletion = "1")
-            server.IsAvailable = true
-            server.IsSecondary = (xml@serverClass = "secondary")
-            server.SupportsMultiuser = (xml@multiuser = "1")
-
-            PutPlexMediaServer(server)
-
-            Debug("Fetched additional server information (" + tostr(server.name) + ", " + tostr(server.machineID) + ")")
-            Debug("URL: " + tostr(server.serverUrl))
-            Debug("Server supports audio transcoding: " + tostr(server.SupportsAudioTranscoding))
-            Debug("Server allows media deletion: " + tostr(server.AllowsMediaDeletion))
-            Debug("Server supports universal transcoding: " + tostr(server.SupportsUniversalTranscoding))
-
-            if server.owned AND NOT duplicate then
-                status = m.contentArray[m.RowIndexes["misc"]]
-                machineId = tostr(server.machineID)
-                if NOT server.IsSecondary AND NOT status.loadedServers.DoesExist(machineID) then
-                    status.loadedServers[machineID] = "1"
-                    channelDir = CreateObject("roAssociativeArray")
-                    channelDir.server = server
-                    channelDir.sourceUrl = ""
-                    channelDir.key = "/system/appstore"
-                    channelDir.Title = "Channel Directory"
-                    if AreMultipleValidatedServers() then
-                        channelDir.ShortDescriptionLine2 = "Browse channels to install on " + server.name
-                    else
-                        channelDir.ShortDescriptionLine2 = "Browse channels to install"
-                    end if
-                    channelDir.Description = channelDir.ShortDescriptionLine2
-                    channelDir.SDPosterURL = "file://pkg:/images/more.png"
-                    channelDir.HDPosterURL = "file://pkg:/images/more.png"
-                    status.content.Push(channelDir)
-                end if
-
-                if m.FirstServer then
-                    m.FirstServer = false
-
-                    if m.LoadingFacade <> invalid then
-                        m.LoadingFacade.Close()
-                        m.LoadingFacade = invalid
-                        m.GdmTimer.Active = false
-                        m.GdmTimer = invalid
-                    end if
-
-                    ' Add universal search now that we have a server
-                    univSearch = CreateObject("roAssociativeArray")
-                    univSearch.sourceUrl = ""
-                    univSearch.ContentType = "search"
-                    univSearch.Key = "globalsearch"
-                    univSearch.Title = "Search"
-                    univSearch.Description = "Search for items across all your sections and channels"
-                    univSearch.ShortDescriptionLine2 = univSearch.Description
-                    univSearch.SDPosterURL = "file://pkg:/images/search.png"
-                    univSearch.HDPosterURL = "file://pkg:/images/search.png"
-                    status.content.Unshift(univSearch)
-                    m.Listener.OnDataLoaded(m.RowIndexes["misc"], status.content, 0, status.content.Count(), true)
-                else
-                    m.Listener.OnDataLoaded(m.RowIndexes["misc"], status.content, status.content.Count() - 1, 1, true)
-                end if
-            end if
-        end if
     else if requestContext.requestType = "servers" then
         for each serverElem in xml.Server
             ' If we already have a server for this machine ID then disregard
             existing = GetPlexMediaServer(serverElem@machineIdentifier)
             addr = firstOf(serverElem@scheme, "http") + "://" + serverElem@host + ":" + serverElem@port
+            if addr = "http://:" then addr = ""
+
             if existing <> invalid AND (existing.IsAvailable OR existing.ServerUrl = addr) then
                 Debug("Ignoring duplicate shared server: " + tostr(serverElem@machineIdentifier))
                 existing.AccessToken = firstOf(serverElem@accessToken, MyPlexManager().AuthToken)
@@ -752,10 +665,11 @@ Sub homeOnUrlEvent(msg, requestContext)
                 ' most efficient connection.
                 localAddresses = strTokenize(serverElem@localAddresses, ",")
                 for each localAddress in localAddresses
-                    m.CreateServerRequests(newServer, true, false, "http://" + localAddress + ":32400")
+                    newServer.AddConnection("http://" + localAddress + ":32400", true)
                 next
 
-                m.CreateServerRequests(newServer, true, false)
+                newServer.TestConnections(m)
+                m.UpdatePendingRequestsForConnectionTesting(newServer.owned, true)
 
                 Debug("Added myPlex server: " + tostr(newServer.name))
             end if
@@ -777,8 +691,10 @@ Sub homeOnServerDiscovered(serverInfo)
             existing.owned = true
             existing.IsConfigured = true
             existing.local = true
-            m.CreateServerRequests(existing, true, false)
+            existing.AddConnection(serverInfo.Url, true)
+            existing.TestConnections(m)
             UpdateServerAddress(existing)
+            m.UpdatePendingRequestsForConnectionTesting(existing.owned, true)
         end if
     else
         AddServer(serverInfo.Name, serverInfo.Url, serverInfo.MachineID)
@@ -787,7 +703,9 @@ Sub homeOnServerDiscovered(serverInfo)
         server.IsConfigured = true
         server.local = true
         PutPlexMediaServer(server)
-        m.CreateServerRequests(server, true, false)
+        server.AddConnection(serverInfo.Url, true)
+        server.TestConnections(m)
+        m.UpdatePendingRequestsForConnectionTesting(server.owned, true)
     end if
 End Sub
 
@@ -827,7 +745,7 @@ Sub homeRefreshData()
     m.contentArray[m.RowIndexes["recently_added"]].loadedServers.Clear()
 
     for each server in GetOwnedPlexMediaServers()
-        m.CreateServerRequests(server, true, true)
+        m.CreateServerRequests(server, true)
     next
 
     ' Clear any screensaver images, use the default.
@@ -877,5 +795,119 @@ Sub homeOnTimerExpired(timer)
             status.loadStatus = 2
             m.Listener.OnDataLoaded(m.RowIndexes["misc"], status.content, 0, status.content.Count(), true)
         end if
+    else if timer.Name = "GDMRequests" then
+        m.UpdatePendingRequestsForConnectionTesting(true, false)
+    else if timer.Name = "HideServerRows" then
+        Debug("Checking to see if we should hide any server rows")
+        row_keys = ["channels", "sections", "on_deck", "recently_added", "shared_sections"]
+
+        ' This is a total hack, but because of the mixed aspect grid's propensity
+        ' to crash, we need to focus something else ASAP if we're going to hide
+        ' the current row. If we wait until we naturally find the row in the
+        ' loop, it's too late.
+        focusedIndex = validint(m.Listener.selectedRow)
+        focusedStatus = m.contentArray[focusedIndex]
+        if focusedStatus.pendingRequests = 0 AND focusedStatus.content.Count() = 0 then
+            Debug("Looks like we're going to hide the focused row, force loading misc")
+            m.LoadMoreContent(m.RowIndexes["misc"], 0)
+        end if
+
+        for each row_key in row_keys
+            index = m.RowIndexes[row_key]
+            status = m.contentArray[index]
+            if status.pendingRequests = 0 AND status.content.Count() = 0 then
+                status.loadStatus = 2
+                m.Listener.OnDataLoaded(index, status.content, 0, status.content.Count(), true)
+            end if
+        end for
+    end if
+End Sub
+
+Sub homeOnFoundConnection(server, success)
+    ' Decrement our pending request counts
+    m.UpdatePendingRequestsForConnectionTesting(server.owned, false)
+
+    if NOT success then return
+
+    m.CreateServerRequests(server, true)
+
+    ' Nothing else to do for shared servers
+    if NOT server.owned then return
+
+    status = m.contentArray[m.RowIndexes["misc"]]
+    machineId = tostr(server.machineID)
+    if NOT server.IsSecondary AND NOT status.loadedServers.DoesExist(machineID) then
+        status.loadedServers[machineID] = "1"
+        channelDir = CreateObject("roAssociativeArray")
+        channelDir.server = server
+        channelDir.sourceUrl = ""
+        channelDir.key = "/system/appstore"
+        channelDir.Title = "Channel Directory"
+        if AreMultipleValidatedServers() then
+            channelDir.ShortDescriptionLine2 = "Browse channels to install on " + server.name
+        else
+            channelDir.ShortDescriptionLine2 = "Browse channels to install"
+        end if
+        channelDir.Description = channelDir.ShortDescriptionLine2
+        channelDir.SDPosterURL = "file://pkg:/images/more.png"
+        channelDir.HDPosterURL = "file://pkg:/images/more.png"
+        status.content.Push(channelDir)
+    end if
+
+    if m.FirstServer then
+        m.FirstServer = false
+
+        if m.LoadingFacade <> invalid then
+            m.LoadingFacade.Close()
+            m.LoadingFacade = invalid
+            m.GdmTimer.Active = false
+            m.GdmTimer = invalid
+        end if
+
+        ' Add universal search now that we have a server
+        univSearch = CreateObject("roAssociativeArray")
+        univSearch.sourceUrl = ""
+        univSearch.ContentType = "search"
+        univSearch.Key = "globalsearch"
+        univSearch.Title = "Search"
+        univSearch.Description = "Search for items across all your sections and channels"
+        univSearch.ShortDescriptionLine2 = univSearch.Description
+        univSearch.SDPosterURL = "file://pkg:/images/search.png"
+        univSearch.HDPosterURL = "file://pkg:/images/search.png"
+        status.content.Unshift(univSearch)
+        m.Listener.OnDataLoaded(m.RowIndexes["misc"], status.content, 0, status.content.Count(), true)
+    else
+        m.Listener.OnDataLoaded(m.RowIndexes["misc"], status.content, status.content.Count() - 1, 1, true)
+    end if
+End Sub
+
+Sub homeUpdatePendingRequestsForConnectionTesting(owned, increment)
+    if increment then
+        delta = 1
+    else
+        delta = -1
+    end if
+
+    if owned then
+        row_keys = ["channels", "sections", "on_deck", "recently_added"]
+    else
+        row_keys = ["shared_sections"]
+    end if
+
+    timer = invalid
+
+    for each row_key in row_keys
+        status = m.contentArray[m.RowIndexes[row_key]]
+        status.pendingRequests = status.pendingRequests + delta
+        if status.pendingRequests = 0 AND timer = invalid then
+            timer = createTimer()
+            timer.Name = "HideServerRows"
+            timer.SetDuration(250)
+            timer.Active = true
+        end if
+    end for
+
+    if timer <> invalid then
+        GetViewController().AddTimer(timer, m)
     end if
 End Sub

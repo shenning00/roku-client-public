@@ -61,6 +61,14 @@ Function newPlexMediaServer(pmsUrl, pmsName, machineID) As Object
     pms.timelineTimer = createTimer()
     pms.timelineTimer.SetDuration(15000, true)
 
+    pms.Connections = CreateObject("roAssociativeArray")
+    pms.AddConnection = pmsAddConnection
+    pms.TestConnections = pmsTestConnections
+    pms.foundBestConnection = false
+    pms.pendingRequests = 0
+
+    pms.AddConnection(pms.serverUrl, false)
+
     return pms
 End Function
 
@@ -929,5 +937,87 @@ Sub pmsAddDirectPlayInfo(video, item, mediaKey)
 End Sub
 
 Sub pmsOnUrlEvent(msg, requestContext)
-    ' Don't care about the response for any of our requests.
+    if requestContext.requestType = "connection" then
+        isError = false
+        m.pendingRequests = m.pendingRequests - 1
+        Debug("Connection test at " + requestContext.connectionUrl + " returned status " + tostr(msg.GetResponseCode()))
+
+        ' If we already found a connection we're happy with, then move on.
+        if m.foundBestConnection then return
+        isError = (msg.GetResponseCode() <> 200)
+
+        if NOT isError then
+            xml = CreateObject("roXMLElement")
+            if NOT xml.Parse(msg.GetString()) then
+                Debug("Failed to parse XML for server's root response")
+                isError = true
+            end if
+        end if
+
+        ' Make sure this connection really does correspond to our server
+        if NOT isError then
+            if m.machineID <> invalid AND m.machineID <> xml@machineIdentifier then
+                Debug("Ignoring server response from unexpected machine ID")
+                isError = true
+            end if
+        end if
+
+        if isError then
+            if m.pendingRequests = 0 AND NOT m.IsAvailable AND requestContext.connectionListener <> invalid then
+                requestContext.connectionListener.OnFoundConnection(m, false)
+            end if
+            return
+        end if
+
+        wasAvailable = m.IsAvailable
+
+        m.name = firstOf(xml@friendlyName, m.name)
+        m.machineID = xml@machineIdentifier
+        m.online = true
+        m.SupportsAudioTranscoding = (xml@transcoderAudio = "1")
+        m.SupportsVideoTranscoding = (xml@transcoderVideoQualities <> invalid)
+        m.SupportsPhotoTranscoding = NOT m.synced
+        m.SupportsUniversalTranscoding = ServerVersionCompare(xml@version, [0, 9, 7, 15])
+        m.AllowsMediaDeletion = m.owned AND (xml@allowMediaDeletion = "1")
+        m.IsAvailable = true
+        m.IsSecondary = (xml@serverClass = "secondary")
+        m.SupportsMultiuser = (xml@multiuser = "1")
+        m.serverUrl = requestContext.connectionUrl
+
+        PutPlexMediaServer(m)
+
+        Debug("Fetched additional server information (" + tostr(m.name) + ", " + tostr(m.machineID) + ")")
+        Debug("URL: " + tostr(m.serverUrl))
+        Debug("Server supports audio transcoding: " + tostr(m.SupportsAudioTranscoding))
+        Debug("Server allows media deletion: " + tostr(m.AllowsMediaDeletion))
+        Debug("Server supports universal transcoding: " + tostr(m.SupportsUniversalTranscoding))
+
+        if m.Connections[requestContext.connectionUrl] = true then
+            m.local = true
+            m.foundBestConnection = true
+        end if
+
+        if NOT wasAvailable AND requestContext.connectionListener <> invalid then
+            requestContext.connectionListener.OnFoundConnection(m, true)
+        end if
+    end if
+End Sub
+
+Sub pmsAddConnection(url, local)
+    if isnonemptystr(url) then m.Connections[url] = local
+End Sub
+
+Sub pmsTestConnections(listener)
+    m.foundBestConnection = false
+    m.IsAvailable = false
+
+    for each connectionUrl in m.Connections
+        request = m.CreateRequest("", "/", true, connectionUrl)
+        context = CreateObject("roAssociativeArray")
+        context.requestType = "connection"
+        context.connectionUrl = connectionUrl
+        context.connectionListener = listener
+        m.pendingRequests = m.pendingRequests + 1
+        GetViewController().StartRequest(request, m, context)
+    end for
 End Sub

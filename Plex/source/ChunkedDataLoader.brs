@@ -152,7 +152,7 @@ Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
             for i = 0 to m.miscRows - 1
                 m.Listener.OnDataLoaded(i, m.rowContent[i], 0, m.rowContent[i].Count(), true)
             end for
-            if m.totalSize = 0 then m.Listener.Screen.SetFocusedListItem(0, 0)
+            if m.totalSize = 0 then m.Listener.SetFocusedItem(0, 0)
         end if
     end if
 

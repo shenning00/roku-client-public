@@ -421,7 +421,10 @@ Sub vcShowHelpScreen()
     paragraphs = []
     paragraphs.Push("With Plex you can easily stream your videos, music, photos and home movies to your Roku using your Plex Media Server.")
     paragraphs.Push("To download and install your free Plex Media Server on your computer, visit http://plexapp.com/getplex")
-    paragraphs.Push("Enjoy Plex free for 30 days, then unlock with a PlexPass subscription or a small one-time purchase.")
+
+    if AppManager().State = "Trial" then
+        paragraphs.Push("Enjoy Plex free for 30 days, then unlock with a PlexPass subscription or a small one-time purchase.")
+    end if
 
     screen = createParagraphScreen(header, paragraphs, m)
     m.InitializeOtherScreen(screen, invalid)

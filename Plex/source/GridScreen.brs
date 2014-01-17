@@ -106,6 +106,7 @@ Function gridInitializeRows(clear=true)
     m.Screen.SetupLists(names.Count())
     m.Screen.SetListNames(names)
     m.Screen.SetListPosterStyles(rowStyles)
+    m.rowStyles = rowStyles
     m.rowVisibility = []
 
     ' If we already "loaded" an empty row, we need to set the list visibility now
@@ -304,6 +305,22 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
         ' versions.
         m.SetVisibility(row, true)
     end if
+
+    ' Update thumbs according to the row style they were loaded in
+    for i = startItem to startItem + count - 1
+        item = data[i]
+        if item.ThumbProcessed <> invalid AND item.ThumbProcessed <> m.rowStyles[row] then
+            item.ThumbProcessed = m.rowStyles[row]
+            if item.ThumbUrl <> invalid AND item.server <> invalid then
+                sizes = ImageSizesGrid(m.rowStyles[row])
+                item.SDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.sdWidth, sizes.sdHeight)
+                item.HDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.hdWidth, sizes.hdHeight)
+            else if item.ThumbUrl = invalid
+                item.SDPosterURL = "file://pkg:/images/BlankPoster_" + m.rowStyles[row] + ".png"
+                item.HDPosterURL = "file://pkg:/images/BlankPoster_" + m.rowStyles[row] + ".png"
+            end if
+        end if
+    end for
 
     m.hasData = true
 

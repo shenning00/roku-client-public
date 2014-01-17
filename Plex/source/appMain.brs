@@ -207,10 +207,10 @@ Sub initTheme()
     ' The general idea is that we have a small number of colors for text
     ' and try to set them appropriately for each screen type.
 
-    background = "#363636"
-    titleText = "#BFBFBF"
-    normalText = "#999999"
-    detailText = "#74777A"
+    background = "#1f1f1f"
+    titleText = "#eeeeee"
+    normalText = "#aaaaaa"
+    detailText = "#999999"
     subtleText = "#525252"
 
     theme.BackgroundColor = background
@@ -234,7 +234,7 @@ Sub initTheme()
     theme.ButtonNormalColor = normalText
     ' Default for ButtonHighlightColor seems OK...
 
-    theme.RegistrationCodeColor = "#FFA500"
+    theme.RegistrationCodeColor = "#ff8a00"
     theme.RegistrationFocalColor = normalText
 
     theme.SearchHeaderText = titleText

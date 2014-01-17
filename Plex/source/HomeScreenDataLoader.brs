@@ -163,8 +163,8 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean)
         allChannels.server = server
         allChannels.sourceUrl = ""
         allChannels.Key = "/channels/all"
-        allChannels.SDPosterURL = "file://pkg:/images/more.png"
-        allChannels.HDPosterURL = "file://pkg:/images/more.png"
+        allChannels.ThumbUrl = invalid
+        allChannels.ThumbProcessed = ""
         channels.item = allChannels
         m.AddOrStartRequest(channels, m.RowIndexes["channels"], startRequests)
     else
@@ -242,8 +242,8 @@ Sub homeCreatePlaylistRequests(name, title, description, row, startRequests)
     allItems.server = currentItems.server
     allItems.sourceUrl = ""
     allItems.Key = "/pms/playlists/" + name
-    allItems.SDPosterURL = "file://pkg:/images/more.png"
-    allItems.HDPosterURL = "file://pkg:/images/more.png"
+    allItems.ThumbUrl = invalid
+    allItems.ThumbProcessed = ""
     allItems.ContentType = "playlists"
     currentItems.item = allItems
     currentItems.emptyItem = allItems

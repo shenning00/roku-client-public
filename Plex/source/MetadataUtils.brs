@@ -35,6 +35,26 @@ Function ImageSizes(viewGroup, contentType) As Object
 	return sizes
 End Function
 
+Function ImageSizesGrid(style)
+    sizes = CreateObject("roAssociativeArray")
+
+    sizes.hdWidth = "192"
+    sizes.sdWidth = "140"
+
+    if style = "square" then
+        sizes.sdHeight = "126"
+        sizes.hdHeight = "192"
+    else if style = "landscape" then
+        sizes.sdHeight = "94"
+        sizes.hdHeight = "144"
+    else
+        sizes.sdHeight = "180"
+        sizes.hdHeight = "274"
+    end if
+
+    return sizes
+End Function
+
 Function createBaseMetadata(container, item, thumb=invalid) As Object
     metadata = CreateObject("roAssociativeArray")
 
@@ -72,11 +92,15 @@ Function createBaseMetadata(container, item, thumb=invalid) As Object
     end if
 
     if thumb <> invalid AND thumb <> "" AND server <> invalid then
+        metadata.ThumbUrl = thumb
+        metadata.ThumbProcessed = ""
         metadata.SDPosterURL = server.TranscodedImage(container.sourceUrl, thumb, sizes.sdWidth, sizes.sdHeight)
         metadata.HDPosterURL = server.TranscodedImage(container.sourceUrl, thumb, sizes.hdWidth, sizes.hdHeight)
     else
-        metadata.SDPosterURL = "file://pkg:/images/BlankPoster.png"
-        metadata.HDPosterURL = "file://pkg:/images/BlankPoster.png"
+        metadata.ThumbUrl = invalid
+        metadata.ThumbProcessed = "portrait"
+        metadata.SDPosterURL = "file://pkg:/images/BlankPoster_portrait.png"
+        metadata.HDPosterURL = "file://pkg:/images/BlankPoster_portrait.png"
     end if
 
     metadata.sourceUrl = container.sourceUrl

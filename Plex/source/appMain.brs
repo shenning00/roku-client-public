@@ -8,15 +8,20 @@ Sub Main(args)
 
     ' Process any launch args (set registry values)
     for each arg in args
+        value = args[arg]
         if Left(arg, 5) = "pref!" then
             pref = Mid(arg, 6)
-            value = args[arg]
             Debug("Setting preference from launch param: " + pref + " = " + value)
             if value <> "" then
                 RegWrite(pref, value, "preferences")
             else
                 RegDelete(pref, "preferences")
             end if
+        else if arg = "debug" AND value = "1" then
+            Debug("Enabling logger based on launch param")
+            m.Logger.Enable()
+            m.Logger.EnablePapertrail()
+            DumpRegistry()
         end if
     next
 

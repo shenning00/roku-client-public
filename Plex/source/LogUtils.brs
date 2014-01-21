@@ -68,6 +68,7 @@ Sub loggerLog(msg)
 End Sub
 
 Sub loggerEnable()
+    if m.Enabled then return
     m.Enabled = true
     RegWrite("debugenabled", "1")
     m.DebugBuffer = box("")
@@ -148,7 +149,11 @@ Function ProcessLogsRequest() As Boolean
 End Function
 
 Sub loggerEnablePapertrail(minutes=20, pms=invalid)
-    if NOT MyPlexManager().IsSignedIn then return
+    if MyPlexManager().IsSignedIn then
+        label = MyPlexManager().Username
+    else
+        label = GetGlobal("rokuUniqueID")
+    end if
 
     ' Create the remote syslog socket
 
@@ -175,7 +180,7 @@ Sub loggerEnablePapertrail(minutes=20, pms=invalid)
     ' enabled, the logs will continue to be associated with the original
     ' account.
 
-    m.SyslogHeader = "<135> PlexForRoku: [" + MyPlexManager().Username + "] "
+    m.SyslogHeader = "<135> PlexForRoku: [" + label + "] "
 
     ' Enable papertrail logging for the PMS, too.
     if pms <> invalid then
@@ -205,5 +210,26 @@ Sub loggerLogToPapertrail(msg)
     while m.SyslogSocket.isWritable() AND m.SyslogPackets.Count() > 0
         m.SyslogSocket.sendStr(m.SyslogPackets.RemoveHead())
     end while
+End Sub
+
+Sub DumpRegistry()
+    Debug("---- Registry Contents ----")
+    registry = CreateObject("roRegistry")
+    sections = registry.GetSectionList()
+
+    for each sectionName in sections
+        Debug("---- Start " + sectionName + " ----")
+        section = CreateObject("roRegistrySection", sectionName)
+        keys = section.GetKeyList()
+
+        for each key in keys
+            value = section.Read(key)
+            Debug(key + ": " + tostr(value))
+        end for
+
+        Debug("---- End " + sectionName + " ----")
+    end for
+
+    Debug("---- End Registry ---------")
 End Sub
 

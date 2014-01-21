@@ -166,8 +166,14 @@ Function videoPlayerCreateVideoPlayer()
 
     player = CreateObject("roVideoScreen")
     player.SetMessagePort(m.Port)
-    if GetGlobal("rokuVersionArr", [0])[0] >= 4 then
+
+    rokuVersion = GetGlobal("rokuVersionArr", [0])
+    if CheckMinimumVersion(rokuVersion, [4]) then
         player.EnableCookies()
+    end if
+
+    if CheckMinimumVersion(rokuVersion, [4, 9]) AND videoItem.SubtitleUrl <> invalid AND RegRead("subtitle_behavior", "preferences", "override") = "override" then
+        player.ShowSubtitle(true)
     end if
 
     ' If we're playing the video from the server, add appropriate X-Plex

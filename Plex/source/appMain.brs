@@ -102,6 +102,9 @@ Sub initGlobals()
     knownModels["2400SK"] = "Now TV"
     ' 2500X is also Roku HD, but the newer meaning of it... not sure how best to distinguish
     knownModels["2500X"] = "Roku HD (New)"
+    knownModels["2700X"] = "Roku LT"
+    knownModels["2710X"] = "Roku 1"
+    knownModels["2720X"] = "Roku 2"
     knownModels["3000X"] = "Roku 2 HD"
     knownModels["3050X"] = "Roku 2 XD"
     knownModels["3100X"] = "Roku 2 XS"

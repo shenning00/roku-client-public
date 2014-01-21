@@ -470,7 +470,12 @@ Function pmsConstructVideoItem(item, seekValue, allowDirectPlay, forceDirectPlay
         end if
     end if
 
+    ' Temporaily change the TranscodeServer to a string for cleaner logs
+    transcodeServer = video.TranscodeServer
+    video.TranscodeServer = transcodeServer.serverUrl
     printAA(video)
+    video.TranscodeServer = transcodeServer
+
     return video
 End Function
 

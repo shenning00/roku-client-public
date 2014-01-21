@@ -807,6 +807,13 @@ Function ConvertURLToLoopback(url) As String
 
     if m.IsRequestToServer(url) then
         url = "http://127.0.0.1:32400" + Right(url, len(url) - len(m.serverUrl))
+        if m.AccessToken <> invalid then
+            if instr(1, url, "?") > 0 then
+                url = url + "&X-Plex-Token=" + m.AccessToken
+            else
+                url = url + "?X-Plex-Token=" + m.AccessToken
+            end if
+        end if
     end if
 
     return url

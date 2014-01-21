@@ -254,7 +254,7 @@ End Sub
 
 Function gdmAdvertiserGetResponseString() As String
     if m.responseString = invalid then
-        buf = box("HELLO * HTTP/1.0" + Chr(10))
+        buf = box("HTTP/1.0 200 OK" + WinNL())
 
         appendNameValue(buf, "Name", RegRead("player_name", "preferences", GetGlobalAA().Lookup("rokuModel")))
         appendNameValue(buf, "Port", GetViewController().WebServer.port.tostr())
@@ -276,6 +276,6 @@ Function gdmAdvertiserGetResponseString() As String
 End Function
 
 Sub appendNameValue(buf, name, value)
-    line = name + ": " + value + Chr(10)
+    line = name + ": " + value + WinNL()
     buf.AppendString(line, Len(line))
 End Sub

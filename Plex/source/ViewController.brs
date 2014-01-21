@@ -712,7 +712,9 @@ Sub vcOnInitialized()
     AnalyticsTracker().OnStartup(MyPlexManager().IsSignedIn)
 
     if m.screens.Count() = 0 then
-        if RegRead("last_run_version", "misc") = invalid then
+        if m.PlaybackArgs <> invalid then
+            m.CreatePlayerForItem(m.PlaybackArgs.context, m.PlaybackArgs.index, m.PlaybackArgs.offset)
+        else if RegRead("last_run_version", "misc") = invalid then
             m.ShowFirstRun()
             RegWrite("last_run_version", GetGlobal("appVersionStr"), "misc")
         else if RegRead("last_run_version", "misc", "") <> GetGlobal("appVersionStr") then

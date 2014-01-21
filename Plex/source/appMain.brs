@@ -6,6 +6,9 @@
 Sub Main(args)
     m.RegistryCache = CreateObject("roAssociativeArray")
 
+    forceDebug = false
+    initGlobals()
+
     ' Process any launch args (set registry values)
     for each arg in args
         value = args[arg]
@@ -20,7 +23,7 @@ Sub Main(args)
         else if arg = "debug" AND value = "1" then
             Debug("Enabling logger based on launch param")
             m.Logger.Enable()
-            m.Logger.EnablePapertrail()
+            forceDebug = true
             DumpRegistry()
         end if
     next
@@ -57,10 +60,15 @@ Sub Main(args)
     'initialize theme attributes like titles, logos and overhang color
     initTheme()
 
-    initGlobals()
-
     'prepare the screen for display and get ready to begin
     controller = createViewController()
+
+    if forceDebug then m.Logger.EnablePapertrail()
+
+    if args.DoesExist("key") then
+        ProcessPlayMediaArgs(controller, args)
+    end if
+
     controller.Show()
 End Sub
 
@@ -303,3 +311,52 @@ Function SupportsSurroundSound(transcoding=false, refresh=false) As Boolean
         return result
     end if
 End Function
+
+Sub ProcessPlayMediaArgs(viewController, args)
+    ' TODO(schuyler): We haven't necessarily loaded servers yet, so this may
+    ' need some work. Queued items are particularly troublesome.
+
+    machineID = firstOf(args["machineIdentifier"], "")
+
+    if machineID = "node" then
+        server = GetPrimaryServer()
+    else
+        server = GetPlexMediaServer(machineID)
+    end if
+
+    if server = invalid then
+        port = firstOf(args["port"], "32400")
+        protocol = firstOf(args["protocol"], "http")
+        address = args["address"]
+        token = args["token"]
+        if address = invalid then return
+
+        server = newSyntheticPlexMediaServer(protocol + "://" + address + ":" + port, machineID, token)
+    end if
+
+    offset = firstOf(args["offset"], "0").toint()
+    key = args["key"]
+    containerKey = firstOf(args["containerKey"], key)
+
+    if containerKey = invalid then return
+
+    container = createPlexContainerForUrl(server, "", containerKey)
+    children = container.GetMetadata()
+    matchIndex = invalid
+    for i = 0 to children.Count() - 1
+        item = children[i]
+        if key = item.key then
+            matchIndex = i
+            exit for
+        end if
+    end for
+
+    if matchIndex = invalid AND children.Count() = 1 then matchIndex = 0
+
+    if matchIndex <> invalid then
+        viewController.PlaybackArgs = CreateObject("roAssociativeArray")
+        viewController.PlaybackArgs.context = children
+        viewController.PlaybackArgs.index = matchIndex
+        viewController.PlaybackArgs.offset = offset
+    end if
+End Sub

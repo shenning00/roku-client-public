@@ -198,11 +198,7 @@ Function mpTranscodedImage(queryUrl, imagePath, width, height) As String
     end if
 
     if m.CheckTranscodeServer() then
-        url = m.TranscodeServer.TranscodedImage(queryUrl, imagePath, width, height)
-        if m.TranscodeServer.AccessToken <> invalid then
-            url = url + "&X-Plex-Token=" + m.TranscodeServer.AccessToken
-        end if
-        return url
+        return m.TranscodeServer.TranscodedImage(queryUrl, imagePath, width, height)
     else if Left(imagePath, 4) = "http" then
         return imagePath
     else

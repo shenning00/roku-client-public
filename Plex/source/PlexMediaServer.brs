@@ -568,6 +568,9 @@ Function TranscodedImage(queryUrl, imagePath, width, height, forceBackgroundColo
     if forceBackgroundColor <> invalid then
         image = image + "&format=jpeg&background=" + forceBackgroundColor
     end if
+    if m.AccessToken <> invalid then
+        image = image + "&X-Plex-Token=" + m.AccessToken
+    end if
     return image
 End Function
 

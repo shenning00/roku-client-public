@@ -50,7 +50,7 @@ Function createGridScreenForItem(item, viewController, style="square") As Object
 
     obj.Item = item
 
-    if RegRead("enable_filtered_browsing", "preferences", "1") = "1" then
+    if RegRead("enable_filtered_browsing", "preferences", "1") = "1" AND NOT (item.ContentType = "section" AND item.Filters = invalid) then
         if GetGlobal("IsHD") then
             rowSize = 5
         else

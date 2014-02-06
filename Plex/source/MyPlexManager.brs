@@ -46,6 +46,7 @@ Function MyPlexManager() As Object
         obj.CheckTranscodeServer = mpCheckTranscodeServer
 
         obj.ProcessAccountResponse = mpProcessAccountResponse
+        obj.Publish = mpPublish
 
         ' For using the view controller for HTTP requests
         obj.ScreenID = -5
@@ -116,10 +117,34 @@ Sub mpProcessAccountResponse(event)
         mgr = AppManager()
         mgr.IsPlexPass = m.IsPlexPass
         mgr.ResetState()
+
+        m.Publish()
     else
         Debug("Failed to validate myPlex token")
         m.IsSignedIn = false
     end if
+End Sub
+
+Sub mpPublish()
+    context = CreateObject("roAssociativeArray")
+    context.requestType = "publish"
+
+    url = "/devices/" + GetGlobal("rokuUniqueID")
+    device = CreateObject("roDeviceInfo")
+    addrs = device.GetIPAddrs()
+    first = true
+    for each iface in addrs
+        if first then
+            first = false
+            url = url + "?"
+        else
+            url = url + "&"
+        end if
+        url = url + HttpEncode("Connection[][uri]") + "=" + HttpEncode("http://" + addrs[iface] + ":8324")
+    end for
+
+    req = m.CreateRequest("", url)
+    GetViewController().StartRequest(req, m, context, "_method=PUT")
 End Sub
 
 Function mpCreateRequest(sourceUrl As String, path As String, appendToken=true As Boolean, connectionUrl=invalid) As Object

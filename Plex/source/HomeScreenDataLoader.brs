@@ -18,16 +18,16 @@ Function createHomeScreenDataLoader(listener)
     loader.OnUrlEvent = homeOnUrlEvent
     loader.OnServerDiscovered = homeOnServerDiscovered
     loader.OnMyPlexChange = homeOnMyPlexChange
-    loader.RemoveInvalidServers = homeRemoveInvalidServers
+    loader.OnServersChange = homeOnServersChange
     loader.OnFoundConnection = homeOnFoundConnection
     loader.UpdatePendingRequestsForConnectionTesting = homeUpdatePendingRequestsForConnectionTesting
 
+    loader.SetupRows = homeSetupRows
     loader.CreateRow = homeCreateRow
     loader.CreateServerRequests = homeCreateServerRequests
     loader.CreateMyPlexRequests = homeCreateMyPlexRequests
     loader.CreatePlaylistRequests = homeCreatePlaylistRequests
     loader.CreateAllPlaylistRequests = homeCreateAllPlaylistRequests
-    loader.RemoveFromRowIf = homeRemoveFromRowIf
     loader.AddOrStartRequest = homeAddOrStartRequest
 
     loader.contentArray = []
@@ -36,29 +36,38 @@ Function createHomeScreenDataLoader(listener)
     loader.RowIndexes = {}
     loader.FirstLoad = true
     loader.FirstServer = true
+    loader.reinitializeGrid = false
 
-    rows = [
-        { title: "Channels", key: "channels", style: "square" },
-        { title: "Library Sections", key: "sections", style: "square" },
-        { title: "On Deck", key: "on_deck", style: "portrait" },
-        { title: "Recently Added", key: "recently_added", style: "portrait" },
-        { title: "Queue", key: "queue", style: "landscape" },
-        { title: "Recommendations", key: "recommendations", style: "landscape" },
-        { title: "Shared Library Sections", key: "shared_sections", style: "square" },
-        { title: "Miscellaneous", key: "misc", style: "square" }
-    ]
-    ReorderItemsByKeyPriority(rows, RegRead("home_row_order", "preferences", ""))
+    loader.lastMachineID = RegRead("lastMachineID")
+    loader.lastSectionKey = RegRead("lastSectionKey")
 
-    for each row in rows
-        loader.RowIndexes[row.key] = loader.CreateRow(row.title, row.style)
-    next
+    loader.OnTimerExpired = homeOnTimerExpired
 
-    ' Kick off myPlex requests if we're signed in.
-    if MyPlexManager().IsSignedIn then
-        loader.CreateMyPlexRequests(false)
-        loader.UpdatePendingRequestsForConnectionTesting(true, true)
-        loader.UpdatePendingRequestsForConnectionTesting(false, true)
-    end if
+    ' Create a static item for prefs and put it in the Misc row.
+    prefs = CreateObject("roAssociativeArray")
+    prefs.sourceUrl = ""
+    prefs.ContentType = "prefs"
+    prefs.Key = "globalprefs"
+    prefs.Title = "Preferences"
+    prefs.ShortDescriptionLine1 = "Preferences"
+    prefs.SDPosterURL = "file://pkg:/images/gear.png"
+    prefs.HDPosterURL = "file://pkg:/images/gear.png"
+    loader.prefsItem = prefs
+
+    ' Create an item for Now Playing in the Misc row that will be shown while
+    ' the audio player is active.
+    nowPlaying = CreateObject("roAssociativeArray")
+    nowPlaying.sourceUrl = ""
+    nowPlaying.ContentType = "audio"
+    nowPlaying.Key = "nowplaying"
+    nowPlaying.Title = "Now Playing"
+    nowPlaying.ShortDescriptionLine1 = "Now Playing"
+    nowPlaying.SDPosterURL = "file://pkg:/images/section-music.png"
+    nowPlaying.HDPosterURL = "file://pkg:/images/section-music.png"
+    nowPlaying.CurIndex = invalid
+    loader.nowPlayingItem = nowPlaying
+
+    loader.SetupRows()
 
     ' Kick off an asynchronous GDM discover.
     if RegRead("autodiscover", "preferences", "1") = "1" then
@@ -74,45 +83,48 @@ Function createHomeScreenDataLoader(listener)
         end if
     end if
 
+    return loader
+End Function
+
+Sub homeSetupRows()
+    m.contentArray = []
+    m.RowNames = []
+    m.styles = []
+    m.RowIndexes = {}
+
+    rows = [
+        { title: "Channels", key: "channels", style: "square" },
+        { title: "Library Sections", key: "sections", style: "square" },
+        { title: "On Deck", key: "on_deck", style: "portrait" },
+        { title: "Recently Added", key: "recently_added", style: "portrait" },
+        { title: "Queue", key: "queue", style: "landscape" },
+        { title: "Recommendations", key: "recommendations", style: "landscape" },
+        { title: "Shared Library Sections", key: "shared_sections", style: "square" },
+        { title: "Miscellaneous", key: "misc", style: "square" }
+    ]
+    ReorderItemsByKeyPriority(rows, RegRead("home_row_order", "preferences", ""))
+
+    for each row in rows
+        m.RowIndexes[row.key] = m.CreateRow(row.title, row.style)
+    next
+
+    m.contentArray[m.RowIndexes["misc"]].content.Push(m.prefsItem)
+
+    ' Kick off myPlex requests if we're signed in.
+    if MyPlexManager().IsSignedIn then
+        m.CreateMyPlexRequests(false)
+        m.UpdatePendingRequestsForConnectionTesting(true, true)
+        m.UpdatePendingRequestsForConnectionTesting(false, true)
+    end if
+
     ' Kick off requests for servers we already know about.
     configuredServers = PlexMediaServers()
     Debug("Setting up home screen content, server count: " + tostr(configuredServers.Count()))
     for each server in configuredServers
-        server.TestConnections(loader)
-        loader.UpdatePendingRequestsForConnectionTesting(server.owned, true)
+        server.TestConnections(m)
+        m.UpdatePendingRequestsForConnectionTesting(server.owned, true)
     next
-
-    ' Create a static item for prefs and put it in the Misc row.
-    prefs = CreateObject("roAssociativeArray")
-    prefs.sourceUrl = ""
-    prefs.ContentType = "prefs"
-    prefs.Key = "globalprefs"
-    prefs.Title = "Preferences"
-    prefs.ShortDescriptionLine1 = "Preferences"
-    prefs.SDPosterURL = "file://pkg:/images/gear.png"
-    prefs.HDPosterURL = "file://pkg:/images/gear.png"
-    loader.contentArray[loader.RowIndexes["misc"]].content.Push(prefs)
-
-    ' Create an item for Now Playing in the Misc row that will be shown while
-    ' the audio player is active.
-    nowPlaying = CreateObject("roAssociativeArray")
-    nowPlaying.sourceUrl = ""
-    nowPlaying.ContentType = "audio"
-    nowPlaying.Key = "nowplaying"
-    nowPlaying.Title = "Now Playing"
-    nowPlaying.ShortDescriptionLine1 = "Now Playing"
-    nowPlaying.SDPosterURL = "file://pkg:/images/section-music.png"
-    nowPlaying.HDPosterURL = "file://pkg:/images/section-music.png"
-    nowPlaying.CurIndex = invalid
-    loader.nowPlayingItem = nowPlaying
-
-    loader.lastMachineID = RegRead("lastMachineID")
-    loader.lastSectionKey = RegRead("lastSectionKey")
-
-    loader.OnTimerExpired = homeOnTimerExpired
-
-    return loader
-End Function
+End Sub
 
 Function homeCreateRow(name, style) As Integer
     index = m.RowNames.Count()
@@ -285,26 +297,6 @@ Function IsInvalidServer(item) As Boolean
         return false
     end if
 End Function
-
-Sub homeRemoveFromRowIf(row, predicate)
-    newContent = []
-    modified = false
-    status = m.contentArray[row]
-
-    for each item in status.content
-        if predicate(item) then
-            modified = true
-        else
-            newContent.Push(item)
-        end if
-    next
-
-    if modified then
-        Debug("Removed " + tostr(status.content.Count() - newContent.Count()) + " items from row" + tostr(row))
-        status.content = newContent
-        m.Listener.OnDataLoaded(row, newContent, 0, newContent.Count(), true)
-    end if
-End Sub
 
 Function homeLoadMoreContent(focusedIndex, extraRows=0)
     myPlex = MyPlexManager()
@@ -700,6 +692,32 @@ Function homeGetLoadStatus(row)
 End Function
 
 Sub homeRefreshData()
+    ' The home screen is never empty, make sure we don't close ourself.
+    m.Listener.hasData = true
+
+    if m.reinitializeGrid then
+        m.reinitializeGrid = false
+        m.FirstLoad = true
+        m.FirstServer = true
+
+        ClearPlexMediaServers()
+        m.SetupRows()
+        m.Listener.InitializeRows()
+    else
+        ' Refresh the queue
+        m.CreateAllPlaylistRequests(true)
+
+        ' Refresh things that may have changed as a result of our actions.
+        m.contentArray[m.RowIndexes["channels"]].refreshContent = []
+        m.contentArray[m.RowIndexes["channels"]].loadedServers.Clear()
+        m.contentArray[m.RowIndexes["on_deck"]].refreshContent = []
+        m.contentArray[m.RowIndexes["on_deck"]].loadedServers.Clear()
+
+        for each server in GetOwnedPlexMediaServers()
+            m.CreateServerRequests(server, true)
+        next
+    end if
+
     ' Update the Now Playing item according to whether or not something is playing
     miscContent = m.contentArray[m.RowIndexes["misc"]].content
     if m.nowPlayingItem.CurIndex = invalid AND AudioPlayer().ContextScreenID <> invalid then
@@ -710,53 +728,17 @@ Sub homeRefreshData()
         m.nowPlayingItem.CurIndex = invalid
     end if
 
-    ' The home screen is never empty, make sure we don't close ourself.
-    m.Listener.hasData = true
-
-    ' Refresh the queue
-    m.CreateAllPlaylistRequests(true)
-
-    ' Refresh the sections and channels for all of our owned servers
-    m.contentArray[m.RowIndexes["sections"]].refreshContent = []
-    m.contentArray[m.RowIndexes["sections"]].loadedServers.Clear()
-    m.contentArray[m.RowIndexes["channels"]].refreshContent = []
-    m.contentArray[m.RowIndexes["channels"]].loadedServers.Clear()
-    m.contentArray[m.RowIndexes["on_deck"]].refreshContent = []
-    m.contentArray[m.RowIndexes["on_deck"]].loadedServers.Clear()
-    m.contentArray[m.RowIndexes["recently_added"]].refreshContent = []
-    m.contentArray[m.RowIndexes["recently_added"]].loadedServers.Clear()
-
-    for each server in GetOwnedPlexMediaServers()
-        m.CreateServerRequests(server, true)
-    next
-
     ' Clear any screensaver images, use the default.
     SaveImagesForScreenSaver(invalid, {})
 End Sub
 
 Sub homeOnMyPlexChange()
     Debug("myPlex status changed")
-
-    if MyPlexManager().IsSignedIn then
-        m.CreateMyPlexRequests(true)
-    else
-        m.RemoveFromRowIf(m.RowIndexes["sections"], IsMyPlexServer)
-        m.RemoveFromRowIf(m.RowIndexes["channels"], IsMyPlexServer)
-        m.RemoveFromRowIf(m.RowIndexes["on_deck"], IsMyPlexServer)
-        m.RemoveFromRowIf(m.RowIndexes["recently_added"], IsMyPlexServer)
-        m.RemoveFromRowIf(m.RowIndexes["misc"], IsMyPlexServer)
-        m.RemoveFromRowIf(m.RowIndexes["queue"], AlwaysTrue)
-        m.RemoveFromRowIf(m.RowIndexes["recommendations"], AlwaysTrue)
-        m.RemoveFromRowIf(m.RowIndexes["shared_sections"], AlwaysTrue)
-    end if
+    m.reinitializeGrid = true
 End Sub
 
-Sub homeRemoveInvalidServers()
-    m.RemoveFromRowIf(m.RowIndexes["sections"], IsInvalidServer)
-    m.RemoveFromRowIf(m.RowIndexes["channels"], IsInvalidServer)
-    m.RemoveFromRowIf(m.RowIndexes["on_deck"], IsInvalidServer)
-    m.RemoveFromRowIf(m.RowIndexes["recently_added"], IsInvalidServer)
-    m.RemoveFromRowIf(m.RowIndexes["misc"], IsInvalidServer)
+Sub homeOnServersChange()
+    m.reinitializeGrid = true
 End Sub
 
 Sub homeOnTimerExpired(timer)

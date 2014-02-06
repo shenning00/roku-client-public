@@ -320,8 +320,8 @@ Function prefsMainHandleMessage(msg) As Boolean
                 m.Changes["servers"].AddReplace(machineID, "removed")
             next
 
-            m.ViewController.PopScreen(m)
             m.ViewController.Home.Refresh(m.Changes)
+            m.ViewController.PopScreen(m)
         else if msg.isListItemSelected() then
             command = m.GetSelectedCommand(msg.GetIndex())
             if command = "servers" then

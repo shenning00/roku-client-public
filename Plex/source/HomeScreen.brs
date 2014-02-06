@@ -43,23 +43,14 @@ Sub refreshHomeScreen(changes)
         next
 
         servers = changes["servers"]
-        didRemove = false
         for each machineID in servers
             Debug("Server " + tostr(machineID) + " was " + tostr(servers[machineID]))
             if servers[machineID] = "removed" then
                 DeletePlexMediaServer(machineID)
-                didRemove = true
-            else
-                server = GetPlexMediaServer(machineID)
-                if server <> invalid then
-                    m.Loader.CreateServerRequests(server, true, false)
-                end if
             end if
         next
 
-        if didRemove then
-            m.Loader.RemoveInvalidServers()
-        end if
+        m.Loader.OnServersChange()
     end if
 
     ' Recompute our capabilities

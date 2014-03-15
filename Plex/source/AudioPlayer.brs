@@ -92,7 +92,7 @@ Function audioPlayerHandleMessage(msg) As Boolean
             if m.ContextScreenID <> invalid then
                 amountPlayed = m.GetPlaybackProgress()
                 Debug("Sending analytics event, appear to have listened to audio for " + tostr(amountPlayed) + " seconds")
-                AnalyticsTracker().TrackEvent("Playback", firstOf(item.ContentType, "track"), item.mediaContainerIdentifier, amountPlayed)
+                AnalyticsTracker().TrackEvent("Playback", firstOf(item.ContentType, "track"), tostr(item.mediaContainerIdentifier), amountPlayed)
             end if
 
             if m.Repeat <> 1 then

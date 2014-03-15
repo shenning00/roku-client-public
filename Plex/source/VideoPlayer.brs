@@ -280,7 +280,7 @@ Function videoPlayerHandleMessage(msg) As Boolean
             amountPlayed = m.lastPosition - startOffset
             if amountPlayed > m.playbackTimer.GetElapsedSeconds() then amountPlayed = m.playbackTimer.GetElapsedSeconds()
             Debug("Sending analytics event, appear to have watched video for " + tostr(amountPlayed) + " seconds")
-            AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "clip"), m.Item.mediaContainerIdentifier, amountPlayed)
+            AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "clip"), tostr(m.Item.mediaContainerIdentifier), amountPlayed)
 
             mediaItem = m.Item.preferredMediaItem
 
@@ -302,7 +302,7 @@ Function videoPlayerHandleMessage(msg) As Boolean
             end if
         else if msg.isPlaybackPosition() then
             if m.bufferingTimer <> invalid then
-                AnalyticsTracker().TrackTiming(m.bufferingTimer.GetElapsedMillis(), "buffering", tostr(m.IsTranscoded), m.Item.mediaContainerIdentifier)
+                AnalyticsTracker().TrackTiming(m.bufferingTimer.GetElapsedMillis(), "buffering", tostr(m.IsTranscoded), tostr(m.Item.mediaContainerIdentifier))
                 m.bufferingTimer = invalid
             end if
             mediaItem = m.Item.preferredMediaItem

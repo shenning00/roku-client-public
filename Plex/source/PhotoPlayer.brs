@@ -83,7 +83,7 @@ Function photoPlayerHandleMessage(msg) As Boolean
             ' Send an analytics event
             amountPlayed = m.playbackTimer.GetElapsedSeconds()
             Debug("Sending analytics event, appear to have watched slideshow for " + tostr(amountPlayed) + " seconds")
-            AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "photo"), m.Item.mediaContainerIdentifier, amountPlayed)
+            AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "photo"), tostr(m.Item.mediaContainerIdentifier), amountPlayed)
             NowPlayingManager().location = "navigation"
             NowPlayingManager().UpdatePlaybackState("photo", invalid, "stopped", 0)
 

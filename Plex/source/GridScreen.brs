@@ -179,7 +179,8 @@ Function gridHandleMessage(msg) As Boolean
                 index = arr[1]
             end if
 
-            item = context[index]
+            item = invalid
+            if context <> invalid then item = context[index]
             if item <> invalid then
                 if item.ContentType = "series" OR m.ignoreRowNameForBreadcrumbs then
                     breadcrumbs = [item.Title]

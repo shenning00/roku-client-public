@@ -139,8 +139,12 @@ Function posterHandleMessage(msg) As Boolean
             m.Loader.LoadMoreContent(m.focusedList, 0)
         else if msg.isListItemSelected() then
             index = msg.GetIndex()
-            content = m.contentArray[m.focusedList].content
-            selected = content[index]
+
+            selected = invalid
+            if m.contentArray[m.focusedList] <> invalid and m.contentArray[m.focusedList].content <> invalid then 
+                content = m.contentArray[m.focusedList].content
+                selected = content[index]
+            end if
 
             if selected <> invalid then
                 contentType = selected.ContentType
@@ -165,8 +169,9 @@ Function posterHandleMessage(msg) As Boolean
             ' focused toward the end of the list, update the content.
 
             status = m.contentArray[m.focusedList]
-            status.focusedIndex = msg.GetIndex()
-            if status.focusedIndex + 10 > status.lastUpdatedSize AND status.content.Count() > status.lastUpdatedSize then
+            if status <> invalid then status.focusedIndex = msg.GetIndex()
+
+            if status <> invalid and status.focusedIndex + 10 > status.lastUpdatedSize AND status.content.Count() > status.lastUpdatedSize then
                 m.Screen.SetContentList(status.content)
                 status.lastUpdatedSize = status.content.Count()
             end if

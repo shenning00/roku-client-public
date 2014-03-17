@@ -47,8 +47,8 @@ Function newAlbumMetadata(container, item, detailed=true) As Object
     album.Album = firstOf(item@title, item@album)
     album.ReleaseDate = firstOf(item@originallyAvailableAt, item@year)
 
-    if album.Title = invalid then
-        album.Title = album.Album
+    if album.Title = "" then
+        album.Title = firstOf(album.Album, "")
         album.ShortDescriptionLine1 = album.Title
     end if
 
@@ -90,8 +90,8 @@ Function newTrackMetadata(container, item, detailed=true) As Object
     end if
     track.Length = track.Duration
 
-    if track.Title = invalid then
-        track.Title = item@track
+    if track.Title = "" then
+        track.Title = firstof(item@track, "")
         track.ShortDescriptionLine1 = track.Title
     end if
 

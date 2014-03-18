@@ -156,6 +156,12 @@ Function chunkedLoadMoreContent(focusedIndex, extraRows=0) As Boolean
         end if
     end if
 
+    if m.refocusRow <> invalid and m.refocusRow = focusedIndex then
+        Debug("Refocus row: "+tostr(m.refocusRow))
+        m.Listener.SetFocusedItem(m.refocusRow, firstOf(m.listener.focusedIndex,0))
+        m.refocusRow = invalid
+    end if
+
     return true
 End Function
 
@@ -179,6 +185,7 @@ Sub chunkedRefreshData()
     if m.Listener <> invalid AND m.Listener.InitializeRows <> invalid then
         m.SetupRows()
         m.hasStartedLoading = false
+        if m.listener.selectedRow <> invalid then m.refocusRow = m.listener.selectedRow
         m.Listener.InitializeRows()
         m.LoadMoreContent(0, 0)
     end if

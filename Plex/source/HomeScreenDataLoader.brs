@@ -412,7 +412,7 @@ Sub homeOnUrlEvent(msg, requestContext)
     if msg.GetResponseCode() <> 200 then
         Debug("Got a " + tostr(msg.GetResponseCode()) + " response from " + url + " - " + tostr(msg.GetFailureReason()))
 
-        if status <> invalid AND status.loadStatus < 2 AND status.pendingRequests = 0 then
+        if status <> invalid AND status.pendingRequests = 0 then
             status.loadStatus = 2
             if status.refreshContent <> invalid then
                 status.content = status.refreshContent

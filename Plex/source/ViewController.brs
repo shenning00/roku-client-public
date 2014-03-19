@@ -332,17 +332,17 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
     ' Prompt about resuming if there's an offset and the caller didn't specify a seek value.
     if seekValue = invalid then
         if metadata.viewOffset <> invalid then
-            offsetSeconds = fix(val(metadata.viewOffset)/1000)
+            offsetMillis = int(val(metadata.viewOffset))
 
             dlg = createBaseDialog()
             dlg.Title = "Play Video"
-            dlg.SetButton("resume", "Resume from " + TimeDisplay(offsetSeconds))
+            dlg.SetButton("resume", "Resume from " + TimeDisplay(int(offsetMillis/1000)))
             dlg.SetButton("play", "Play from beginning")
             dlg.Show(true)
 
             if dlg.Result = invalid then return invalid
             if dlg.Result = "resume" then
-                seekValue = int(val(metadata.viewOffset))
+                seekValue = offsetMillis
             else
                 seekValue = 0
             end if

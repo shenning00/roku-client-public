@@ -244,6 +244,7 @@ Sub videoActivate(priorScreen)
     end if
 
     if m.refreshOnActivate then
+        m.refreshOnActivate = false
         if m.ContinuousPlay AND (priorScreen.isPlayed = true OR priorScreen.playbackError = true) then
             m.GotoNextItem()
             directPlayOptions = m.PlayButtonStates[m.PlayButtonState]

@@ -170,8 +170,10 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         if screen = invalid then return invalid
         screenName = "Audio Springboard"
     else if contentType = "section" then
-        RegWrite("lastMachineID", item.server.machineID)
-        RegWrite("lastSectionKey", item.key)
+        if item.server <> invalid AND item.server.machineID <> invalid then
+            RegWrite("lastMachineID", item.server.machineID)
+            RegWrite("lastSectionKey", item.key)
+        end if
         screen = createGridScreenForItem(item, m)
         screenName = "Section: " + tostr(item.type)
     else if contentType = "playlists" then

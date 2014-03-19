@@ -123,6 +123,7 @@ Sub initGlobals()
     knownModels["3100X"] = "Roku 2 XS"
     knownModels["3400X"] = "Roku Streaming Stick"
     knownModels["3420X"] = "Roku Streaming Stick"
+    knownModels["3500X"] = "Roku Streaming Stick HDMI"
     knownModels["4200R"] = "Roku 3"
     knownModels["4200X"] = "Roku 3"
 

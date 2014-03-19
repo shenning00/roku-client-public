@@ -225,8 +225,20 @@ Function gridHandleMessage(msg) As Boolean
         else if msg.isRemoteKeyPressed() then
             if msg.GetIndex() = 13 then
                 Debug("Playing item directly from grid")
-                context = m.contentArray[m.selectedRow]
-                m.ViewController.CreatePlayerForItem(context, m.focusedIndex)
+                arr = m.Loader.GetContextAndIndexForItem(m.selectedRow, m.focusedIndex)
+                if arr = invalid then
+                    context = m.contentArray[m.selectedRow]
+                    index = m.focusedIndex
+                else
+                    context = arr[0]
+                    index = arr[1]
+                end if
+ 
+                if context <> invalid then
+                    m.Facade = CreateObject("roGridScreen")
+                    m.Facade.Show()
+                    m.ViewController.CreatePlayerForItem(context, index)
+                end if
             end if
         else if msg.isScreenClosed() then
             if m.recreating then

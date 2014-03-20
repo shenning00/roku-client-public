@@ -752,7 +752,7 @@ Sub vcAddBreadcrumbs(screen, breadcrumbs)
         if count >= 2 then
             breadcrumbs = [m.breadcrumbs[count-2], m.breadcrumbs[count-1]]
         else
-            breadcrumbs = m.breadcrumbs[0]
+            breadcrumbs = [m.breadcrumbs[0]]
         end if
 
         m.breadcrumbs.Append(breadcrumbs)

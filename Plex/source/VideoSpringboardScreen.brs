@@ -38,7 +38,7 @@ Sub videoSetupButtons()
     Debug("Media = " + tostr(m.media))
     Debug("Can direct play = " + tostr(videoCanDirectPlay(m.media)))
 
-    supportedIdentifier = (m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.library" OR m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.myplex")
+    supportedIdentifier = (m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.library" OR m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.myplex") and m.metadata.media <> invalid
     if supportedIdentifier then
         if m.metadata.viewCount <> invalid AND val(m.metadata.viewCount) > 0 then
             m.AddButton("Mark as unwatched", "unscrobble")
@@ -54,7 +54,7 @@ Sub videoSetupButtons()
         m.AddButton("Delete from queue", "delete")
     end if
 
-    m.AddButton("Playback options", "options")
+    if m.metadata.media <> invalid then m.AddButton("Playback options", "options")
 
     if supportedIdentifier then
         if m.metadata.UserRating = invalid then
@@ -98,12 +98,18 @@ Function videoHandleMessage(msg) As Boolean
             Debug("Button command: " + tostr(buttonCommand))
 
             if buttonCommand = "play" OR buttonCommand = "resume" then
-                directPlayOptions = m.PlayButtonStates[m.PlayButtonState]
-                Debug("Playing video with Direct Play options set to: " + directPlayOptions.label)
-                m.ViewController.CreateVideoPlayer(m.metadata, invalid, directPlayOptions.value)
+                ' It's possible in mixed content (global recentlyAdded) this is not a video.
+                if m.media = invalid then 
+                    breadcrumbs = [firstOf(m.viewController.breadcrumbs.peek(),""),m.metadata.title]
+                    m.ViewController.CreateScreenForItem([m.metadata], 0, breadcrumbs)
+                else 
+                    directPlayOptions = m.PlayButtonStates[m.PlayButtonState]
+                    Debug("Playing video with Direct Play options set to: " + directPlayOptions.label)
+                    m.ViewController.CreateVideoPlayer(m.metadata, invalid, directPlayOptions.value)
 
-                ' Refresh play data after playing.
-                m.refreshOnActivate = true
+                    ' Refresh play data after playing.
+                    m.refreshOnActivate = true
+                end if
             else if buttonCommand = "scrobble" then
                 m.Item.server.Scrobble(m.metadata.ratingKey, m.metadata.mediaContainerIdentifier)
                 ' Refresh play data after scrobbling

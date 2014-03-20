@@ -250,7 +250,6 @@ Sub videoActivate(priorScreen)
     end if
 
     if m.refreshOnActivate then
-        m.refreshOnActivate = false
         if m.ContinuousPlay AND (priorScreen.isPlayed = true OR priorScreen.playbackError = true) then
             m.GotoNextItem()
             while m.metadata.media = invalid
@@ -261,6 +260,7 @@ Sub videoActivate(priorScreen)
             Debug("Playing video with Direct Play options set to: " + directPlayOptions.label)
             m.ViewController.CreateVideoPlayer(m.metadata, 0, directPlayOptions.value)
         else
+            m.refreshOnActivate = false
             m.Refresh(true)
         end if
     end if

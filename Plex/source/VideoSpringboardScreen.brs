@@ -253,6 +253,10 @@ Sub videoActivate(priorScreen)
         m.refreshOnActivate = false
         if m.ContinuousPlay AND (priorScreen.isPlayed = true OR priorScreen.playbackError = true) then
             m.GotoNextItem()
+            while m.metadata.media = invalid
+                Debug("Media item has no Video object. Skipping: " + tostr(m.metadata.title) + ", " + tostr(m.metadata.type) + ", " + tostr(m.metadata.contenttype))
+                m.GotoNextItem()
+            end while
             directPlayOptions = m.PlayButtonStates[m.PlayButtonState]
             Debug("Playing video with Direct Play options set to: " + directPlayOptions.label)
             m.ViewController.CreateVideoPlayer(m.metadata, 0, directPlayOptions.value)

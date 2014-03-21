@@ -150,9 +150,13 @@ Function showGridScreen() As Integer
     ' don't load much more than we need to before initially showing the
     ' grid. Once we start the event loop we can load the rest of the
     ' content.
+    '
+    ' Caveat: Load all rows on the homeScreen to fix hiding/showing any
+    '         rows the user has toggled in the preferences.
 
     maxRow = m.contentArray.Count() - 1
-    if maxRow > 1 then maxRow = 1
+    home = GetViewController().home
+    if maxRow > 1 and (home <> invalid and home.screenid <> m.screenid) then maxRow = 1
 
     for row = 0 to maxRow
         Debug("Loading beginning of row " + tostr(row))

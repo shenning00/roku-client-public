@@ -433,7 +433,10 @@ Sub gridActivate(priorScreen)
     m.Refreshing = true
     m.Loader.RefreshData()
 
-    if m.Facade <> invalid then m.Facade.Close()
+    if m.Facade <> invalid then
+        m.Facade.Close()
+        m.Facade = invalid
+    end if
 End Sub
 
 Sub gridOnTimerExpired(timer)

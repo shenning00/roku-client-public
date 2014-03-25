@@ -474,7 +474,6 @@ Sub gridSetVisibility(row, visible)
         m.timerRowVisibility.SetDuration(1000)
         m.ViewController.AddTimer(m.timerRowVisibility, m)
     end if
-    m.timerRowVisibility.facade = m.facadeRowVisibility
     m.timerRowVisibility.Active = true
     m.timerRowVisibility.Mark()
 
@@ -497,8 +496,8 @@ Sub gridSetFocusedItem(row, col)
 End Sub
 
 sub gridCloseRowVisibilityFacade(timer)
-    if timer.facade <> invalid then
-            timer.facade.close()
-            timer.facade = invalid
+    if timer.listener.facadeRowVisibility <> invalid then
+        timer.listener.facadeRowVisibility.close()
+        timer.listener.facadeRowVisibility = invalid
     end if
 end sub

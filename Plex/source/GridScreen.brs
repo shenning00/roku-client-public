@@ -118,7 +118,12 @@ Function gridInitializeRows(clear=true)
         m.Screen.SetContentList(row, m.contentArray[row])
         if m.lastUpdatedSize[row] = 0 AND m.Loader.GetLoadStatus(row) = 2 then
             Debug("Hiding row " + tostr(row) + " in InitializeRows")
-            m.SetVisibility(row, false)
+            home = GetViewController().home
+            if home <> invalid and home.screenid = m.screenid and m.loader.rowindexes["misc"] = row then
+                Debug("Ignore setting visibility to false for the HomeScreen misc row")
+            else
+                m.SetVisibility(row, false)
+            end if
         end if
     end for
 
@@ -434,18 +439,45 @@ End Sub
 Sub gridOnTimerExpired(timer)
     if timer.Name = "Reactivate" AND m.ViewController.IsActiveScreen(m) then
         m.Activate(invalid)
+    else if timer.Name = "gridRowVisibilityChange" then
+        gridCloseRowVisibilityFacade(timer)
     end if
 End Sub
 
 Sub gridSetVisibility(row, visible)
     if m.rowVisibility[row] = visible then return
-    if visible
-        Debug("Desperately wanted to make row " + tostr(row) + " visible, but too afraid to try")
-    else
-        Debug("Hiding row " + tostr(row))
-        m.rowVisibility[row] = visible
-        m.Screen.SetListVisible(row, visible)
+
+    if m.facadeRowVisibility = invalid then
+        ' use the same type of facade in use to be less intrusive
+        if type(m.facade) = "roGridScreen" then
+            facade = CreateObject("roGridScreen")
+        else
+            facade = CreateObject("roOneLineDialog")
+            facade.SetTitle("Please Wait")
+        end if
+        facade.Show()
+        m.facadeRowVisibility = facade
     end if
+
+    ' Prevent facade flashes. Use a timer to to keep the same
+    ' facade displayed while we iterate through the rows.
+    if m.timerRowVisibility = invalid then
+        m.timerRowVisibility = createTimer()
+        m.timerRowVisibility.Name = "gridRowVisibilityChange"
+        m.timerRowVisibility.SetDuration(1000)
+        m.ViewController.AddTimer(m.timerRowVisibility, m)
+    end if
+    m.timerRowVisibility.facade = m.facadeRowVisibility
+    m.timerRowVisibility.Active = true
+    m.timerRowVisibility.Mark()
+
+    ' mark and set rowVisbility as true/false
+    m.rowVisibility[row] = visible
+    m.Screen.SetListVisible(row, visible)
+
+    ' These are odd, but they seem to inhibit a crash (with the facade screen)
+    sleep(500) ' anything lower may intermittently crash
+    m.Screen.SetFocusedListItem(999, 0) 'invalid row so we don't change focus
 End Sub
 
 Sub gridSetFocusedItem(row, col)
@@ -456,3 +488,10 @@ Sub gridSetFocusedItem(row, col)
         Debug("Tried to focus hidden row (" + tostr(row) + "), too afraid to allow it")
     end if
 End Sub
+
+sub gridCloseRowVisibilityFacade(timer)
+    if timer.facade <> invalid then
+            timer.facade.close()
+            timer.facade = invalid
+    end if
+end sub

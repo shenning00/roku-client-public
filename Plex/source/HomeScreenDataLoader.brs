@@ -703,6 +703,14 @@ Sub homeRefreshData()
         ClearPlexMediaServers()
         m.SetupRows()
         m.Listener.InitializeRows()
+
+        ' HomeScreen should re-load all rows. This will fix hiding, and
+        ' showing rows depending on users preferences. The home screen has
+        ' a limited number of rows, so it shouldn't cause any slowdowns.
+        maxRow = m.contentArray.Count() - 1
+        for row = 0 to maxRow
+            m.LoadMoreContent(row, 0)
+        end for
     else
         ' Refresh the queue
         m.CreateAllPlaylistRequests(true)

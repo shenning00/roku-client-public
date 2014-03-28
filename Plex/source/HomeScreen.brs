@@ -60,6 +60,8 @@ End Sub
 Sub homeScreenOnTimerExpired(timer)
     if timer.Name = "clock" AND m.ViewController.IsActiveScreen(m) then
         m.Screen.SetBreadcrumbText("", CurrentTimeAsString())
+    else if timer.Name = "gridRowVisibilityChange" then
+        gridCloseRowVisibilityFacade(timer)
     end if
 End Sub
 

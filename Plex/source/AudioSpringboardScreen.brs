@@ -59,6 +59,10 @@ Function createAudioSpringboardScreen(context, index, viewController) As Dynamic
         obj.AllowLeftRight = dummyScreen.AllowLeftRight
         obj.WrapLeftRight = dummyScreen.WrapLeftRight
         obj.IsShuffled = false
+
+        ' reset the breadcrumbs to the standard "Now Playing"
+        obj.screen.SetBreadcrumbEnabled(true)
+        obj.screen.SetBreadcrumbText("Now Playing","")
     else if player.ContextScreenID = obj.ScreenID then
         ' We're specifically navigating to the now playing screen.
     else if viewController.IsSlideShowPlaying() then

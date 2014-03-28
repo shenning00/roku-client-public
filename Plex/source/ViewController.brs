@@ -165,6 +165,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
             AudioPlayer().ContextScreenID = m.nextScreenId
             screen = createAudioSpringboardScreen(AudioPlayer().Context, AudioPlayer().CurIndex, m)
             screenName = "Now Playing"
+            breadcrumbs = [screenName, ""]
         end if
     else if contentType = "audio" then
         screen = createAudioSpringboardScreen(context, contextIndex, m)

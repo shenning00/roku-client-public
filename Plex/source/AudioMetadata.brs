@@ -69,7 +69,7 @@ Function newTrackMetadata(container, item, detailed=true) As Object
     track.mediaContainerIdentifier = container.xml@identifier
     if track.Type = invalid then track.Type = "track"
 
-    if container.xml@mixedParents = "1" then
+    if container.xml@mixedParents = "1" or container.xml@playQueueVersion <> invalid then
         track.Artist = firstOf(item@grandparentTitle, item@artist)
         track.Album = firstOf(item@parentTitle, item@album, "Unknown Album")
         track.ReleaseDate = item@parentYear

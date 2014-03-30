@@ -3,7 +3,7 @@
 '* like the grid screen that want to load additional data in the background.
 '*
 
-Function createPaginatedLoader(container, initialLoadSize, pageSize)
+Function createPaginatedLoader(container, initialLoadSize, pageSize, item = invalid)
     loader = CreateObject("roAssociativeArray")
     initDataLoader(loader)
 
@@ -20,7 +20,11 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize)
         status = CreateObject("roAssociativeArray")
         status.content = []
         status.loadStatus = 0 ' 0:Not loaded, 1:Partially loaded, 2:Fully loaded
-        status.key = keys[index]
+        if item <> invalid then
+            status.key = loaderKeyFilter(keys[index],tostr(item.type))
+        else
+            status.key = keys[index]
+        end if
         status.name = loader.names[index]
         status.pendingRequests = 0
         status.countLoaded = 0
@@ -251,3 +255,10 @@ Function loaderGetPendingRequestCount() As Integer
 
     return pendingRequests
 End Function
+
+Function loaderKeyFilter(key, itemType)
+    if tostr(key) = "genre" and tostr(itemType) = "artist" and instr(1,key,"type=") = 0 then
+        key = key + "?type=8"
+    end if
+    return key
+end Function

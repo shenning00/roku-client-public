@@ -105,8 +105,17 @@ Function gridInitializeRows(clear=true)
 
     m.Screen.SetupLists(names.Count())
     m.Screen.SetListNames(names)
-    m.Screen.SetListPosterStyles(rowStyles)
-    m.rowStyles = rowStyles
+
+    home = GetViewController().home
+    if home <> invalid and home.screenid <> m.screenid and RegRead("enable_filtered_browsing", "preferences", "1") <> "1" then
+        Debug("Disable SetListPosterStyles() -- prevent a crash.")
+        m.rowStyles = invalid
+        m.rowStyle = "portrait"
+    else
+        m.Screen.SetListPosterStyles(rowStyles)
+        m.rowStyles = rowStyles
+    end if
+
     m.rowVisibility = []
 
     ' If we already "loaded" an empty row, we need to set the list visibility now
@@ -118,7 +127,6 @@ Function gridInitializeRows(clear=true)
         m.Screen.SetContentList(row, m.contentArray[row])
         if m.lastUpdatedSize[row] = 0 AND m.Loader.GetLoadStatus(row) = 2 then
             Debug("Hiding row " + tostr(row) + " in InitializeRows")
-            home = GetViewController().home
             if home <> invalid and home.screenid = m.screenid and m.loader.rowindexes["misc"] = row then
                 Debug("Ignore setting visibility to false for the HomeScreen misc row")
             else
@@ -331,15 +339,22 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
     ' Update thumbs according to the row style they were loaded in
     for i = startItem to startItem + count - 1
         item = data[i]
-        if item.ThumbProcessed <> invalid AND item.ThumbProcessed <> m.rowStyles[row] then
-            item.ThumbProcessed = m.rowStyles[row]
+
+        if m.rowStyles = invalid and m.rowStyle <> invalid then
+            curRowStyle = m.rowStyle
+        else
+            curRowStyle = m.rowStyles[row]
+        end if
+
+        if item.ThumbProcessed <> invalid AND item.ThumbProcessed <> curRowStyle then
+            item.ThumbProcessed = curRowStyle
             if item.ThumbUrl <> invalid AND item.server <> invalid then
-                sizes = ImageSizesGrid(m.rowStyles[row])
+                sizes = ImageSizesGrid(curRowStyle)
                 item.SDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.sdWidth, sizes.sdHeight)
                 item.HDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.hdWidth, sizes.hdHeight)
             else if item.ThumbUrl = invalid
-                item.SDPosterURL = "file://pkg:/images/BlankPoster_" + m.rowStyles[row] + ".png"
-                item.HDPosterURL = "file://pkg:/images/BlankPoster_" + m.rowStyles[row] + ".png"
+                item.SDPosterURL = "file://pkg:/images/BlankPoster_" + curRowStyle + ".png"
+                item.HDPosterURL = "file://pkg:/images/BlankPoster_" + curRowStyle + ".png"
             end if
         end if
     end for
@@ -453,6 +468,13 @@ End Sub
 
 Sub gridSetVisibility(row, visible)
     if m.rowVisibility[row] = visible then return
+
+    ' Ignore the intrusive fix if rowStyles are invalid
+    if m.rowStyles = invalid then
+        m.rowVisibility[row] = visible
+        m.Screen.SetListVisible(row, visible)
+        return
+    end if
 
     if m.facadeRowVisibility = invalid then
         ' use the same type of facade in use to be less intrusive

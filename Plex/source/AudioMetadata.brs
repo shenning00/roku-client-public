@@ -97,6 +97,9 @@ Function newTrackMetadata(container, item, detailed=true) As Object
 
     media = item.Media[0]
 
+    ' TODO(schuyler): This is super lame. We only look at the codec, so it's
+    ' possible to do things like stick AAC inside MKA and do the wrong thing.
+
     if media <> invalid
         part = media.Part[0]
         codec = media@audioCodec
@@ -123,7 +126,18 @@ Function newTrackMetadata(container, item, detailed=true) As Object
         codec = "aac"
     end if
 
-    if codec = "mp3" OR codec = "wma" OR codec = "aac" OR (codec = "flac" AND CheckMinimumVersion(GetGlobal("rokuVersionArr", [0]), [5, 1])) then
+    ' Check against direct play prefs.
+    if codec = "flac" AND NOT CheckMinimumVersion(GetGlobal("rokuVersionArr", [0]), [5, 1]) then
+        default_val = "0"
+    else
+        default_val = "1"
+    end if
+
+    if RegRead("directplay_" + codec, "preferences", default_val) <> "1" then
+        codec = "transcode"
+    end if
+
+    if codec = "mp3" OR codec = "wma" OR codec = "aac" OR codec = "flac" then
         track.StreamFormat = codec
         track.Url = FullUrl(track.server.serverUrl, track.sourceUrl, key)
     else

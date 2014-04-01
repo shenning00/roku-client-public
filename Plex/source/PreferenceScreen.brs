@@ -821,6 +821,7 @@ Function createAudioPrefsScreen(viewController) As Object
 
     obj.Screen.SetHeader("Audio Preferences")
 
+    obj.AddItem({title: "Direct Play"}, "directplay")
     obj.AddItem({title: "Loop Playback"}, "loopalbums", obj.GetEnumValue("loopalbums"))
     obj.AddItem({title: "Theme Music"}, "theme_music", obj.GetEnumValue("theme_music"))
 
@@ -837,6 +838,88 @@ Function createAudioPrefsScreen(viewController) As Object
 End Function
 
 Function prefsAudioHandleMessage(msg) As Boolean
+    handled = false
+
+    if type(msg) = "roListScreenEvent" then
+        handled = true
+
+        if msg.isScreenClosed() then
+            m.ViewController.PopScreen(m)
+        else if msg.isListItemSelected() then
+            command = m.GetSelectedCommand(msg.GetIndex())
+            if command = "close" then
+                m.Screen.Close()
+            else if command = "directplay" then
+                screen = createAudioDirectPlayScreen(m.ViewController)
+                m.ViewController.InitializeOtherScreen(screen, ["Direct Play"])
+                screen.Show()
+            else
+                m.HandleEnumPreference(command, msg.GetIndex())
+            end if
+        end if
+    end if
+
+    return handled
+End Function
+
+'*** Audio Direct Play Preferences ***
+
+Function createAudioDirectPlayScreen(viewController) As Object
+    obj = createBasePrefsScreen(viewController)
+
+    obj.HandleMessage = prefsAudioDirectPlayHandleMessage
+
+    yes_no = [
+        { title: "Enabled", EnumValue: "1" },
+        { title: "Disabled", EnumValue: "0" }
+    ]
+
+    ' FLAC
+    if CheckMinimumVersion(GetGlobal("rokuVersionArr", [0]), [5, 1]) then
+        flac_default = "1"
+    else
+        flac_default = "0"
+    end if
+    obj.Prefs["directplay_flac"] = {
+        values: yes_no,
+        heading: "Direct Play FLAC music",
+        default: flac_default
+    }
+
+    ' AAC
+    obj.Prefs["directplay_aac"] = {
+        values: yes_no,
+        heading: "Direct Play AAC music",
+        default: "1"
+    }
+
+    ' WMA
+    obj.Prefs["directplay_wma"] = {
+        values: yes_no,
+        heading: "Direct Play WMA music",
+        default: "1"
+    }
+
+    ' MP3
+    obj.Prefs["directplay_mp3"] = {
+        values: yes_no,
+        heading: "Direct Play MP3 music",
+        default: "1"
+    }
+
+    obj.Screen.SetHeader("Music Direct Play")
+
+    obj.AddItem({title: "FLAC"}, "directplay_flac", obj.GetEnumValue("directplay_flac"))
+    obj.AddItem({title: "AAC"}, "directplay_aac", obj.GetEnumValue("directplay_aac"))
+    obj.AddItem({title: "WMA"}, "directplay_wma", obj.GetEnumValue("directplay_wma"))
+    obj.AddItem({title: "MP3"}, "directplay_mp3", obj.GetEnumValue("directplay_mp3"))
+
+    obj.AddItem({title: "Close"}, "close")
+
+    return obj
+End Function
+
+Function prefsAudioDirectPlayHandleMessage(msg) As Boolean
     handled = false
 
     if type(msg) = "roListScreenEvent" then

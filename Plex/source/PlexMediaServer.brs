@@ -426,7 +426,7 @@ Function pmsConstructVideoItem(item, seekValue, allowDirectPlay, forceDirectPlay
 
         ' Make sure we have a current value for the surround sound support
         SupportsSurroundSound(false, true)
-        if (videoCanDirectPlay(mediaItem))
+        if (videoCanDirectPlay(mediaItem, item.server))
             resolution = firstOf(mediaItem.videoResolution, "0").toInt()
             Debug("Media item resolution: " + tostr(resolution) + ", max is " + tostr(maxResolution))
             if resolution <= maxResolution then

@@ -35,8 +35,7 @@ Sub videoSetupButtons()
     m.ClearButtons()
 
     m.AddButton(m.PlayButtonStates[m.PlayButtonState].label, "play")
-    Debug("Media = " + tostr(m.media))
-    Debug("Can direct play = " + tostr(videoCanDirectPlay(m.media)))
+    Debug("Can direct play = " + tostr(videoCanDirectPlay(m.media, m.Item.server)))
 
     supportedIdentifier = (m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.library" OR m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.myplex") and m.metadata.media <> invalid
     if supportedIdentifier then

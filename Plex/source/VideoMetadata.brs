@@ -382,7 +382,7 @@ Sub PickMediaItem(hasDetails)
         resolution = firstOf(mediaItem.videoResolution, "0").toInt()
 
         ' If we'll be able to direct play, exit immediately
-        if resolution <= maxResolution AND hasDetails = true AND videoCanDirectPlay(mediaItem) then
+        if resolution <= maxResolution AND hasDetails = true AND videoCanDirectPlay(mediaItem, m.server) then
             bestScore = 100
             bestIndex = index
             exit for

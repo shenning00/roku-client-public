@@ -516,10 +516,18 @@ Function qualityHandleButton(key, data) As Boolean
     return true
 End Function
 
-Function videoCanDirectPlay(mediaItem) As Boolean
+Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
     if mediaItem = invalid then
         Debug("Media item has no Video object, can't direct play")
         return false
+    end if
+
+    ' Synced servers, like Cloud Sync, are a special case. We assume that
+    ' everything is direct playable.
+
+    if server <> invalid AND server.synced then
+        Debug("Media item is synced, assuming direct play")
+        return true
     end if
 
     ' With the Roku 3, the surround sound support may have changed because of

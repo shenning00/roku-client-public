@@ -534,7 +534,8 @@ Sub homeOnUrlEvent(msg, requestContext)
             m.Listener.OnDataLoaded(requestContext.row, status.content, startItem, countLoaded, true)
         end if
 
-        if m.Listener.hasBeenFocused = false AND requestContext.row = m.RowIndexes["sections"] AND type(m.Listener.Screen) = "roGridScreen" AND server.machineID = m.lastMachineID then
+        if NOT(m.Listener.firstSectionFocused = true) AND server.machineID = m.lastMachineID and (requestContext.row = m.RowIndexes["sections"] or requestContext.row = m.RowIndexes["shared_sections"]) then
+            m.Listener.firstSectionFocused = true
             Debug("Trying to focus last used section")
             for i = 0 to status.content.Count() - 1
                 if status.content[i].key = m.lastSectionKey then

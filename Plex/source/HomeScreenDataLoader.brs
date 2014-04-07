@@ -93,19 +93,28 @@ Sub homeSetupRows()
     m.RowIndexes = {}
 
     rows = [
-        { title: "Channels", key: "channels", style: "square" },
-        { title: "Library Sections", key: "sections", style: "square" },
-        { title: "On Deck", key: "on_deck", style: "portrait" },
-        { title: "Recently Added", key: "recently_added", style: "portrait" },
-        { title: "Queue", key: "queue", style: "landscape" },
-        { title: "Recommendations", key: "recommendations", style: "landscape" },
-        { title: "Shared Library Sections", key: "shared_sections", style: "square" },
+        { title: "Channels", key: "channels", style: "square", visibility_key: "row_visibility_channels" },
+        { title: "Library Sections", key: "sections", style: "square", visibility_key: "row_visibility_sections" },
+        { title: "On Deck", key: "on_deck", style: "portrait", visibility_key: "row_visibility_ondeck" },
+        { title: "Recently Added", key: "recently_added", style: "portrait", visibility_key: "row_visibility_recentlyadded" },
+        { title: "Queue", key: "queue", style: "landscape", visibility_key: "playlist_view_queue" },
+        { title: "Recommendations", key: "recommendations", style: "landscape", visibility_key: "playlist_view_recommendations" },
+        { title: "Shared Library Sections", key: "shared_sections", style: "square", visibility_key: "row_visibility_shared_sections" },
         { title: "Miscellaneous", key: "misc", style: "square" }
     ]
     ReorderItemsByKeyPriority(rows, RegRead("home_row_order", "preferences", ""))
 
     for each row in rows
-        m.RowIndexes[row.key] = m.CreateRow(row.title, row.style)
+        visibility = ""
+        if row.visibility_key <> invalid then
+            visibility = RegRead(row.visibility_key, "preferences", "")
+        end if
+
+        if visibility <> "hidden" then
+            m.RowIndexes[row.key] = m.CreateRow(row.title, row.style)
+        else
+            m.RowIndexes[row.key] = -1
+        end if
     next
 
     m.contentArray[m.RowIndexes["misc"]].content.Push(m.prefsItem)
@@ -158,8 +167,7 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean)
     end if
 
     ' Request recently used channels
-    view = RegRead("row_visibility_channels", "preferences", "")
-    if view <> "hidden" then
+    if m.RowIndexes["channels"] >= 0 then
         channels = CreateObject("roAssociativeArray")
         channels.server = server
         channels.key = "/channels/recentlyViewed"
@@ -179,32 +187,24 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean)
         allChannels.ThumbProcessed = ""
         channels.item = allChannels
         m.AddOrStartRequest(channels, m.RowIndexes["channels"], startRequests)
-    else
-        m.Listener.OnDataLoaded(m.RowIndexes["channels"], [], 0, 0, true)
     end if
 
     ' Request global on deck
-    view = RegRead("row_visibility_ondeck", "preferences", "")
-    if view <> "hidden" then
+    if m.RowIndexes["on_deck"] >= 0 then
         onDeck = CreateObject("roAssociativeArray")
         onDeck.server = server
         onDeck.key = "/library/onDeck"
         onDeck.requestType = "media"
         m.AddOrStartRequest(onDeck, m.RowIndexes["on_deck"], startRequests)
-    else
-        m.Listener.OnDataLoaded(m.RowIndexes["on_deck"], [], 0, 0, true)
     end if
 
     ' Request recently added
-    view = RegRead("row_visibility_recentlyadded", "preferences", "")
-    if view <> "hidden" then
+    if m.RowIndexes["recently_added"] >= 0 then
         recents = CreateObject("roAssociativeArray")
         recents.server = server
         recents.key = "/library/recentlyAdded"
         recents.requestType = "media"
         m.AddOrStartRequest(recents, m.RowIndexes["recently_added"], startRequests)
-    else
-        m.Listener.OnDataLoaded(m.RowIndexes["recently_added"], [], 0, 0, true)
     end if
 End Sub
 
@@ -234,11 +234,8 @@ Sub homeCreateAllPlaylistRequests(startRequests As Boolean)
 End Sub
 
 Sub homeCreatePlaylistRequests(name, title, description, row, startRequests)
+    if row < 0 then return
     view = RegRead("playlist_view_" + name, "preferences", "unwatched")
-    if view = "hidden" then
-        m.Listener.OnDataLoaded(row, [], 0, 0, true)
-        return
-    end if
 
     ' Unwatched recommended items
     currentItems = CreateObject("roAssociativeArray")
@@ -264,6 +261,8 @@ Sub homeCreatePlaylistRequests(name, title, description, row, startRequests)
 End Sub
 
 Sub homeAddOrStartRequest(request As Object, row As Integer, startRequests As Boolean)
+    if row < 0 OR row >= m.contentArray.Count() then return
+
     status = m.contentArray[row]
 
     if startRequests then
@@ -311,10 +310,12 @@ Function homeLoadMoreContent(focusedIndex, extraRows=0)
         m.Listener.hasBeenFocused = false
         m.Listener.ignoreNextFocus = true
 
-        if type(m.Listener.Screen) = "roGridScreen" then
-            m.Listener.SetFocusedItem(m.RowIndexes["sections"], 0)
-        else
-            m.Listener.Screen.SetFocusedListItem(m.RowIndexes["sections"])
+        if m.RowIndexes["sections"] >= 0 then
+            if type(m.Listener.Screen) = "roGridScreen" then
+                m.Listener.SetFocusedItem(m.RowIndexes["sections"], 0)
+            else
+                m.Listener.Screen.SetFocusedListItem(m.RowIndexes["sections"])
+            end if
         end if
     end if
 
@@ -717,10 +718,13 @@ Sub homeRefreshData()
         m.CreateAllPlaylistRequests(true)
 
         ' Refresh things that may have changed as a result of our actions.
-        m.contentArray[m.RowIndexes["channels"]].refreshContent = []
-        m.contentArray[m.RowIndexes["channels"]].loadedServers.Clear()
-        m.contentArray[m.RowIndexes["on_deck"]].refreshContent = []
-        m.contentArray[m.RowIndexes["on_deck"]].loadedServers.Clear()
+        for each name in ["channels", "on_deck"]
+            row = m.RowIndexes[name]
+            if row >= 0 then
+                m.contentArray[row].refreshContent = []
+                m.contentArray[row].loadedServers.Clear()
+            end if
+        next
 
         for each server in GetOwnedPlexMediaServers()
             m.CreateServerRequests(server, true)
@@ -787,6 +791,7 @@ Sub homeOnTimerExpired(timer)
 
         for each row_key in row_keys
             index = m.RowIndexes[row_key]
+            if index < 0 then exit for
             status = m.contentArray[index]
             if status.pendingRequests = 0 AND status.content.Count() = 0 then
                 status.loadStatus = 2
@@ -870,7 +875,9 @@ Sub homeUpdatePendingRequestsForConnectionTesting(owned, increment)
     timer = invalid
 
     for each row_key in row_keys
-        status = m.contentArray[m.RowIndexes[row_key]]
+        row = m.RowIndexes[row_key]
+        if row < 0 then exit for
+        status = m.contentArray[row]
         status.pendingRequests = status.pendingRequests + delta
         if status.pendingRequests = 0 AND timer = invalid then
             timer = createTimer()

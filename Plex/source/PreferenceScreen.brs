@@ -1462,6 +1462,16 @@ Function createHomeScreenPrefsScreen(viewController) As Object
         heading: "Show channels on the home screen",
         default: ""
     }
+    obj.Prefs["row_visibility_sections"] = {
+        values: values,
+        heading: "Show library sections on the home screen",
+        default: ""
+    }
+    obj.Prefs["row_visibility_shared_sections"] = {
+        values: values,
+        heading: "Show shared library sections on the home screen",
+        default: ""
+    }
 
     ' Home screen rows that can be reordered
     values = [
@@ -1497,6 +1507,8 @@ Function createHomeScreenPrefsScreen(viewController) As Object
     obj.AddItem({title: "On Deck"}, "row_visibility_ondeck", obj.GetEnumValue("row_visibility_ondeck"))
     obj.AddItem({title: "Recently Added"}, "row_visibility_recentlyadded", obj.GetEnumValue("row_visibility_recentlyadded"))
     obj.AddItem({title: "Channels"}, "row_visibility_channels", obj.GetEnumValue("row_visibility_channels"))
+    obj.AddItem({title: "Library Sections"}, "row_visibility_sections", obj.GetEnumValue("row_visibility_sections"))
+    obj.AddItem({title: "Shared Library Sections"}, "row_visibility_shared_sections", obj.GetEnumValue("row_visibility_shared_sections"))
     obj.AddItem({title: "Reorder Rows"}, "home_row_order")
     obj.AddItem({title: "Clock"}, "home_clock_display", obj.GetEnumValue("home_clock_display"))
     obj.AddItem({title: "Close"}, "close")

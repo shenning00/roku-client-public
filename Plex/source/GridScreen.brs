@@ -271,6 +271,8 @@ Function gridHandleMessage(msg) As Boolean
 End Function
 
 Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count As Integer, finished As Boolean)
+    if row < 0 OR row >= m.contentArray.Count() then return
+
     Debug("Loaded " + tostr(count) + " elements in row " + tostr(row) + ", now have " + tostr(data.Count()))
 
     m.contentArray[row] = data

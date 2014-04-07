@@ -296,6 +296,8 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
             part.postURL = MediaPart@postURL
 			part.streams = CreateObject("roArray", 5, true)
             part.subtitles = invalid
+            part.audioStream = invalid
+            part.videoStream = invalid
             part.exists = MediaPart@exists <> "0"
             part.accessible = MediaPart@accessible <> "0"
             part.duration = validint(strtoi(firstOf(MediaPart@duration, "0")))
@@ -322,8 +324,10 @@ Sub ParseVideoMedia(videoItem, sourceUrl) As Object
 				stream.channels = StreamItem@channels
                 stream.key = StreamItem@key
 
-                if stream.selected <> invalid AND stream.streamType = "3" then
-                    part.subtitles = stream
+                if stream.selected <> invalid then
+                    if stream.streamType = "1" then part.videoStream = stream
+                    if stream.streamType = "2" then part.audioStream = stream
+                    if stream.streamType = "3" then part.subtitles = stream
                 end if
 
                 if stream.streamType = "1" then

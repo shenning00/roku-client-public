@@ -851,13 +851,12 @@ Function Capabilities(recompute=false) As String
     ' It's referred to as 5.1 by the feature, but the Roku is just passing the
     ' signal through and theoretically doesn't care if it's 7.1.
     if SupportsSurroundSound(true, true) then
-        fiveone = RegRead("fivepointone", "preferences", "1")
-        Debug("5.1 support set to: " + fiveone)
-
-        if fiveone <> "2" then
+        if RegRead("fivepointone", "preferences", "1") = "1" then
             audio = audio + ",ac3{channels:8}"
-        else
-            Debug("5.1 support disabled via Tweaks")
+        end if
+
+        if RegRead("fivepointoneDCA", "preferences", "1") = "1" then
+            audio = audio + ",dca{channels:8}"
         end if
     end if
 
@@ -946,6 +945,10 @@ Sub pmsAddDirectPlayInfo(video, item, mediaKey)
     part = mediaItem.parts[mediaItem.curPartIndex]
     if part <> invalid AND part.subtitles <> invalid AND part.subtitles.Codec = "srt" AND part.subtitles.key <> invalid then
         video.SubtitleUrl = FullUrl(m.serverUrl, "", part.subtitles.key) + "?encoding=utf-8"
+    end if
+
+    if part <> invalid AND part.audioStream <> invalid AND part.audioStream.languageCode <> invalid then
+        video.AudioLanguageSelected = part.audioStream.languageCode
     end if
 
     PrintAA(video)

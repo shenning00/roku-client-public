@@ -548,36 +548,53 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
     surroundSoundDCA = surroundSound AND (RegRead("fivepointoneDCA", "preferences", "1") = "1")
     surroundSound = surroundSound AND (RegRead("fivepointone", "preferences", "1") = "1")
 
-    if mediaItem.preferredPart <> invalid AND mediaItem.preferredPart.subtitles <> invalid then
-        subtitleStream = mediaItem.preferredPart.subtitles
-        subtitleFormat = firstOf(subtitleStream.codec, "")
+    part = mediaItem.preferredPart
+
+    if part <> invalid then
+        subtitleStream = part.subtitles
+        audioStream = part.audioStream
+        videoStream = part.videoStream
+
+        if subtitleStream <> invalid then
+            subtitleFormat = firstOf(subtitleStream.codec, "")
+        else
+            subtitleFormat = invalid
+        end if
+
+        if audioStream <> invalid then
+            audioChannels = firstOf(audioStream.channels, "0").toint()
+        else
+            audioChannels = 0
+        end if
     else
+        audioStream = invalid
+        videoStream = invalid
         subtitleStream = invalid
         subtitleFormat = invalid
+        audioChannels = 0
     end if
 
-    ' There doesn't seem to be a great way to do this, but we need to see if
-    ' the audio streams will support direct play. We'll assume that if there
-    ' are audio streams with different numbers of channels, they're probably
-    ' the same audio; if there are multiple streams with the same number of
-    ' channels, they're probably something like commentary or another language.
-    ' So if the selected stream is the first stream with that number of
-    ' channels, it might be chosen by the Roku when Direct Playing. We don't
-    ' just check the selected stream though, because if the 5.1 AC3 stream is
-    ' selected and there's also a stereo AAC stream, we can direct play.
-    ' But if there's a surround AAC stream before a stereo AAC stream, that
-    ' doesn't work.
+    ' We can't exactly tell the Roku which audio stream to play, so deciding
+    ' if a video with multiple audio streams can be direct played is tricky.
+    ' We trust PMS to set the selected stream based on language, capabilities,
+    ' and whatever else it thinks is important. So we mostly need to see if
+    ' the selected stream is supported. If it is supported, then we need to
+    ' see if either we think the Roku will play that stream on its own or if
+    ' we can coerce it. Our only power of coercion is the language, so we can
+    ' basically tell the Roku to do the right thing if the selected stream is
+    ' the first stream for its language code.
 
     stereoCodec = invalid
     surroundCodec = invalid
-    secondaryStreamSelected = false
     surroundStreamFirst = false
     numAudioStreams = 0
     numVideoStreams = 0
-    videoStream = invalid
-    if mediaItem.preferredPart <> invalid then
-        if mediaItem.preferredPart.hasChapterVideoStream then numVideoStreams = 1
-        for each stream in mediaItem.preferredPart.streams
+    audioLanguagesSeen = {}
+    audioLanguageForceable = true
+
+    if part <> invalid then
+        if part.hasChapterVideoStream then numVideoStreams = 1
+        for each stream in part.streams
             if stream.streamType = "2" then
                 numAudioStreams = numAudioStreams + 1
                 numChannels = firstOf(stream.channels, "0").toint()
@@ -585,21 +602,25 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
                     if stereoCodec = invalid then
                         stereoCodec = stream.codec
                         surroundStreamFirst = (surroundCodec <> invalid)
-                    else if stream.selected <> invalid then
-                        secondaryStreamSelected = true
                     end if
+                    languageCode = firstOf(stream.languageCode, "") + "_stereo"
                 else if numChannels >= 6 then
                     ' The Roku is just passing through the surround sound, so
                     ' it theoretically doesn't care whether there were 6 channels
                     ' or 60.
                     if surroundCodec = invalid then
                         surroundCodec = stream.codec
-                    else if stream.selected <> invalid then
-                        secondaryStreamSelected = true
                     end if
+                    languageCode = firstOf(stream.languageCode, "") + "_surround"
                 else
                     Debug("Unexpected channels on audio stream: " + tostr(stream.channels))
+                    languageCode = firstOf(stream.languageCode, "")
                 end if
+
+                if stream.selected <> invalid AND audioLanguagesSeen.DoesExist(languageCode) then
+                    audioLanguageForceable = false
+                end if
+                audioLanguagesSeen[languageCode] = true
             else if stream.streamType = "1" then
                 numVideoStreams = numVideoStreams + 1
                 if videoStream = invalid OR stream.selected <> invalid then
@@ -616,7 +637,7 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
     Debug("Media item subtitles: " + tostr(subtitleFormat))
     Debug("Media item stereo codec: " + tostr(stereoCodec))
     Debug("Media item surround codec: " + tostr(surroundCodec))
-    Debug("Secondary audio stream selected: " + tostr(secondaryStreamSelected))
+    Debug("Media item audio language forceable: " + tostr(audioLanguageForceable))
     Debug("Media item aspect ratio: " + tostr(mediaItem.aspectRatio))
 
     ' If no streams are provided, treat the Media audio codec as stereo.
@@ -638,11 +659,6 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
         return false
     end if
 
-    if secondaryStreamSelected then
-        Debug("videoCanDirectPlay: audio stream selected")
-        return false
-    end if
-
     if (videoStream <> invalid AND videoStream.anamorphic) AND NOT GetGlobal("playsAnamorphic", false) then
         Debug("videoCanDirectPlay: anamorphic videos not supported")
         return false
@@ -650,6 +666,16 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
 
     if mediaItem.height > 1080 then
         Debug("videoCanDirectPlay: height is greater than 1080: " + tostr(mediaItem.height))
+        return false
+    end if
+
+    if surroundStreamFirst AND surroundCodec = "aac" then
+        Debug("videoCanDirectPlay: first audio stream is 5.1 AAC")
+        return false
+    end if
+
+    if NOT audioLanguageForceable then
+        Debug("videoCanDirectPlay: secondary audio stream is selected and can't be forced by language")
         return false
     end if
 
@@ -665,19 +691,16 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
             return false
         end if
 
-        if surroundSound AND (surroundCodec = "ac3" OR stereoCodec = "ac3") then
-            mediaItem.canDirectPlay = true
-            return true
-        end if
+        if audioStream <> invalid then
+            if surroundSound AND audioStream.codec = "ac3" then
+                mediaItem.canDirectPlay = true
+                return true
+            end if
 
-        if surroundStreamFirst then
-            Debug("videoCanDirectPlay: first audio stream is unsupported 5.1")
-            return false
-        end if
-
-        if stereoCodec = "aac" then
-            mediaItem.canDirectPlay = true
-            return true
+            if audioStream.codec = "aac" AND audioChannels <= 2 then
+                mediaItem.canDirectPlay = true
+                return true
+            end if
         end if
 
         if stereoCodec = invalid AND numAudioStreams = 0 AND major >= 4 then
@@ -737,22 +760,26 @@ Function videoCanDirectPlay(mediaItem, server=invalid) As Boolean
             end if
         end if
 
-        if surroundSound AND (surroundCodec = "ac3" OR stereoCodec = "ac3") then
-            mediaItem.canDirectPlay = true
-            return true
+        if audioStream <> invalid then
+            if surroundSound AND audioStream.codec = "ac3" then
+                mediaItem.canDirectPlay = true
+                return true
+            end if
+
+            if surroundSoundDCA AND audioStream.codec = "dca" then
+                mediaItem.canDirectPlay = true
+                return true
+            end if
+
+            if (audioStream.codec = "aac" OR audioStream.codec = "mp3") AND audioChannels <= 2 then
+                mediaItem.canDirectPlay = true
+                return true
+            end if
         end if
 
-        if surroundSoundDCA AND (surroundCodec = "dca" OR stereoCodec = "dca") then
-            mediaItem.canDirectPlay = true
-            return true
-        end if
-
-        if surroundStreamFirst then
-            Debug("videoCanDirectPlay: first audio stream is unsupported 5.1")
-            return false
-        end if
-
-        if stereoCodec <> invalid AND (stereoCodec = "aac" OR stereoCodec = "mp3") then
+        if stereoCodec = invalid AND numAudioStreams = 0 AND major >= 4 then
+            ' If everything else looks ok and there are no audio streams, that's
+            ' fine on Roku 2+.
             mediaItem.canDirectPlay = true
             return true
         end if

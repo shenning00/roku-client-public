@@ -279,8 +279,11 @@ Function videoPlayerHandleMessage(msg) As Boolean
             startOffset = int(m.SeekValue/1000)
             amountPlayed = m.lastPosition - startOffset
             if amountPlayed > m.playbackTimer.GetElapsedSeconds() then amountPlayed = m.playbackTimer.GetElapsedSeconds()
-            Debug("Sending analytics event, appear to have watched video for " + tostr(amountPlayed) + " seconds")
-            AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "clip"), tostr(m.Item.mediaContainerIdentifier), amountPlayed)
+
+            if amountPlayed > 0 then
+                Debug("Sending analytics event, appear to have watched video for " + tostr(amountPlayed) + " seconds")
+                AnalyticsTracker().TrackEvent("Playback", firstOf(m.Item.ContentType, "clip"), tostr(m.Item.mediaContainerIdentifier), amountPlayed)
+            end if
 
             mediaItem = m.Item.preferredMediaItem
 
@@ -301,10 +304,6 @@ Function videoPlayerHandleMessage(msg) As Boolean
                 m.ViewController.PopScreen(m)
             end if
         else if msg.isPlaybackPosition() then
-            if m.bufferingTimer <> invalid then
-                AnalyticsTracker().TrackTiming(m.bufferingTimer.GetElapsedMillis(), "buffering", tostr(m.IsTranscoded), tostr(m.Item.mediaContainerIdentifier))
-                m.bufferingTimer = invalid
-            end if
             mediaItem = m.Item.preferredMediaItem
             m.lastPosition = m.curPartOffset + msg.GetIndex()
             Debug("MediaPlayer::playVideo::VideoScreenEvent::isPlaybackPosition: set progress -> " + tostr(1000*m.lastPosition))
@@ -315,8 +314,14 @@ Function videoPlayerHandleMessage(msg) As Boolean
                     m.isPlayed = true
                 end if
             end if
-            m.playState = "playing"
-            m.UpdateNowPlaying(true)
+
+            if m.bufferingTimer <> invalid AND msg.GetIndex() > 0 then
+                AnalyticsTracker().TrackTiming(m.bufferingTimer.GetElapsedMillis(), "buffering", tostr(m.IsTranscoded), tostr(m.Item.mediaContainerIdentifier))
+                m.bufferingTimer = invalid
+            else
+                m.playState = "playing"
+                m.UpdateNowPlaying(true)
+            end if
         else if msg.isRequestFailed() then
             Debug("MediaPlayer::playVideo::VideoScreenEvent::isRequestFailed - message = " + tostr(msg.GetMessage()))
             Debug("MediaPlayer::playVideo::VideoScreenEvent::isRequestFailed - data = " + tostr(msg.GetData()))

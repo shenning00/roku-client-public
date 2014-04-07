@@ -433,6 +433,10 @@ End Sub
 Function channelStatusHandleButton(key, data) As Boolean
     if key = "purchase" then
         AppManager().StartPurchase()
+    else if key = "connect" then
+        screen = createMyPlexPinScreen(GetViewController())
+        GetViewController().InitializeOtherScreen(screen, invalid)
+        screen.Show()
     end if
     return true
 End Function

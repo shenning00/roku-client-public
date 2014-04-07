@@ -450,6 +450,7 @@ Sub vcShowLimitedWelcome()
     paragraphs = []
     paragraphs.Push("Your Plex trial period has ended. You can continue to browse content in your library, but playback has been disabled.")
     addPurchaseButton = false
+    addConnectButton = NOT MyPlexManager().IsSignedIn
 
     if AppManager().IsAvailableForPurchase then
         paragraphs.Push("To continue using Plex, you can either buy the channel or connect a PlexPass-enabled account.")
@@ -463,6 +464,10 @@ Sub vcShowLimitedWelcome()
 
     if addPurchaseButton then
         screen.SetButton("purchase", "Purchase channel")
+    end if
+
+    if addConnectButton then
+        screen.SetButton("connect", "Connect Plex account")
     end if
 
     screen.HandleButton = channelStatusHandleButton

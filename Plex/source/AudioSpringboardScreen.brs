@@ -35,13 +35,39 @@ Function createAudioSpringboardScreen(context, index, viewController) As Dynamic
         return invalid
     end if
 
+    player = AudioPlayer()
     obj.callbackTimer = createTimer()
     obj.callbackTimer.Active = false
     obj.callbackTimer.SetDuration(1000, true)
-    viewController.AddTimer(obj.callbackTimer, obj)
+
+    ' If we're already on the Now Playing screen, or if a slideshow is playing,
+    ' we may not actually display this springboard screen.
+    displayScreen = true
+    refreshScreen = false
+
+    if viewController.IsMusicNowPlaying() then
+        ' We're already on the now playing screen, just update the context
+        ' of the current screen.
+        displayScreen = false
+        refreshScreen = true
+
+        dummyScreen = obj
+        obj = viewController.GetActiveScreen(true)
+        obj.Context = dummyScreen.Context
+        obj.CurIndex = dummyScreen.CurIndex
+        obj.Item = dummyScreen.Item
+        obj.AllowLeftRight = dummyScreen.AllowLeftRight
+        obj.WrapLeftRight = dummyScreen.WrapLeftRight
+        obj.IsShuffled = false
+    else if player.ContextScreenID = obj.ScreenID then
+        ' We're specifically navigating to the now playing screen.
+    else if viewController.IsSlideShowPlaying() then
+        ' There's a slideshow playing, so just set the player context and don't
+        ' show a springboard.
+        displayScreen = false
+    end if
 
     ' Start playback when screen is opened if there's nothing playing
-    player = AudioPlayer()
     if NOT player.IsPlaying then
         obj.Playstate = 2
         player.SetContext(obj.Context, obj.CurIndex, obj, true)
@@ -54,11 +80,19 @@ Function createAudioSpringboardScreen(context, index, viewController) As Dynamic
         obj.Playstate = 0
     end if
 
-    if player.ContextScreenID = obj.ScreenID then
-        NowPlayingManager().location = "fullScreenMusic"
-    end if
+    if displayScreen then
+        if player.ContextScreenID = obj.ScreenID then
+            NowPlayingManager().location = "fullScreenMusic"
+        end if
 
-    return obj
+        viewController.AddTimer(obj.callbackTimer, obj)
+        return obj
+    else if refreshScreen then
+        obj.Refresh()
+        return invalid
+    else
+        return invalid
+    end if
 End Function
 
 Sub audioSetupButtons()

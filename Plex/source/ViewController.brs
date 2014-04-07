@@ -25,6 +25,8 @@ Function createViewController() As Object
     controller.CreateVideoPlayer = vcCreateVideoPlayer
     controller.CreatePlayerForItem = vcCreatePlayerForItem
     controller.IsVideoPlaying = vcIsVideoPlaying
+    controller.IsSlideShowPlaying = vcIsSlideShowPlaying
+    controller.IsMusicNowPlaying = vcIsMusicNowPlaying
 
     controller.ShowFirstRun = vcShowFirstRun
     controller.ShowReleaseNotes = vcShowReleaseNotes
@@ -157,17 +159,15 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen.SetListStyle("flat-episodic", "zoom-to-fill")
         screenName = "Album Poster"
     else if item.key = "nowplaying" then
-        if AudioPlayer().ContextScreenID = m.screens.Peek().ScreenID then
+        if m.IsMusicNowPlaying() then
             screen = invalid
         else
             AudioPlayer().ContextScreenID = m.nextScreenId
             screen = createAudioSpringboardScreen(AudioPlayer().Context, AudioPlayer().CurIndex, m)
             screenName = "Now Playing"
         end if
-        if screen = invalid then return invalid
     else if contentType = "audio" then
         screen = createAudioSpringboardScreen(context, contextIndex, m)
-        if screen = invalid then return invalid
         screenName = "Audio Springboard"
     else if contentType = "section" then
         if item.server <> invalid AND item.server.machineID <> invalid then
@@ -199,7 +199,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     else if viewGroup = "Store:Info" then
         dialog = createPopupMenu(item)
         dialog.Show()
-        return invalid
+        screen = invalid
     else if viewGroup = "secondary" then
         if RegRead("enable_filtered_browsing", "preferences", "1") = "1" then
             screen = createGridScreenForItem(item, m)
@@ -235,6 +235,8 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         Debug("Creating a default view for contentType=" + tostr(contentType) + ", viewGroup=" + tostr(viewGroup))
         screen = createPosterScreen(item, m)
     end if
+
+    if screen = invalid then return invalid
 
     if screenName = invalid then
         screenName = type(screen.Screen) + " " + firstOf(contentType, "unknown") + " " + firstOf(viewGroup, "unknown")
@@ -384,6 +386,14 @@ End Function
 
 Function vcIsVideoPlaying() As Boolean
     return type(m.screens.Peek().Screen) = "roVideoScreen"
+End Function
+
+Function vcIsSlideShowPlaying() As Boolean
+    return type(m.screens.Peek().Screen) = "roSlideShow"
+End Function
+
+Function vcIsMusicNowPlaying() As Boolean
+    return AudioPlayer().ContextScreenID = m.screens.Peek().ScreenID
 End Function
 
 Sub vcShowFirstRun()
@@ -594,10 +604,12 @@ Function vcIsActiveScreen(screen) As Boolean
     return m.screens.Peek().ScreenID = screen.ScreenID
 End Function
 
-Function vcGetActiveScreen()
+Function vcGetActiveScreen(wrapper=false)
     screen = m.screens.Peek()
     if screen = invalid then
         return invalid
+    else if wrapper then
+        return screen
     else
         return screen.screen
     end if

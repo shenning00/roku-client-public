@@ -791,11 +791,12 @@ Sub homeOnTimerExpired(timer)
 
         for each row_key in row_keys
             index = m.RowIndexes[row_key]
-            if index < 0 then exit for
-            status = m.contentArray[index]
-            if status.pendingRequests = 0 AND status.content.Count() = 0 then
-                status.loadStatus = 2
-                m.Listener.OnDataLoaded(index, status.content, 0, status.content.Count(), true)
+            if index >= 0 then
+                status = m.contentArray[index]
+                if status.pendingRequests = 0 AND status.content.Count() = 0 then
+                    status.loadStatus = 2
+                    m.Listener.OnDataLoaded(index, status.content, 0, status.content.Count(), true)
+                end if
             end if
         end for
     end if
@@ -876,14 +877,15 @@ Sub homeUpdatePendingRequestsForConnectionTesting(owned, increment)
 
     for each row_key in row_keys
         row = m.RowIndexes[row_key]
-        if row < 0 then exit for
-        status = m.contentArray[row]
-        status.pendingRequests = status.pendingRequests + delta
-        if status.pendingRequests = 0 AND timer = invalid then
-            timer = createTimer()
-            timer.Name = "HideServerRows"
-            timer.SetDuration(250)
-            timer.Active = true
+        if row >= 0 then
+            status = m.contentArray[row]
+            status.pendingRequests = status.pendingRequests + delta
+            if status.pendingRequests = 0 AND timer = invalid then
+                timer = createTimer()
+                timer.Name = "HideServerRows"
+                timer.SetDuration(250)
+                timer.Active = true
+            end if
         end if
     end for
 

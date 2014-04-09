@@ -61,6 +61,8 @@ Function createChunkedLoader(item, rowSize)
             m.MiscShortcutKeys = CreateObject("roAssociativeArray")
             m.MiscShortcutKeys["onDeck"] = true
             m.MiscShortcutKeys["folder"] = true
+            m.MiscShortcutKeys["recentlyViewed"] = true
+            m.MiscShortcutKeys["recentlyViewedShows"] = true
         end if
 
         for each node in container.GetMetadata()

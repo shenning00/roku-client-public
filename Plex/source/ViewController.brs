@@ -440,7 +440,7 @@ Sub vcShowHelpScreen()
     paragraphs.Push("To download and install your free Plex Media Server on your computer, visit https://plex.tv/downloads")
 
     if AppManager().State = "Trial" then
-        paragraphs.Push("Enjoy Plex free for 30 days, then unlock with a PlexPass subscription or a small one-time purchase.")
+        paragraphs.Push("Enjoy Plex for Roku free for 30 days, then unlock with a PlexPass subscription or a small one-time purchase.")
     end if
 
     screen = createParagraphScreen(header, paragraphs, m)

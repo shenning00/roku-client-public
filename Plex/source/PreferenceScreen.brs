@@ -437,6 +437,8 @@ Function channelStatusHandleButton(key, data) As Boolean
         screen = createMyPlexPinScreen(GetViewController())
         GetViewController().InitializeOtherScreen(screen, invalid)
         screen.Show()
+    else if key = "close" then
+        MyPlexManager().RefreshAccountInfo()
     end if
     return true
 End Function

@@ -40,7 +40,7 @@ Function MyPlexManager() As Object
         obj.IsPlexPass = false
         obj.Username = invalid
         obj.EmailAddress = invalid
-        obj.CheckAuthentication = mpCheckAuthentication
+        obj.RefreshAccountInfo = mpRefreshAccountInfo
 
         obj.TranscodeServer = invalid
         obj.CheckTranscodeServer = mpCheckTranscodeServer
@@ -67,11 +67,15 @@ Function MyPlexManager() As Object
     return m.MyPlexManager
 End Function
 
-Sub mpCheckAuthentication()
-    if m.IsSignedIn then return
-    token = RegRead("AuthToken", "myplex")
-    if token <> invalid then
-        m.ValidateToken(token)
+Sub mpRefreshAccountInfo()
+    if m.AuthToken <> invalid then
+        dialog = CreateObject("roOneLineDialog")
+        dialog.ShowBusyAnimation()
+        dialog.Show()
+
+        m.ValidateToken(m.AuthToken, false)
+
+        dialog.Close()
     end if
 End Sub
 

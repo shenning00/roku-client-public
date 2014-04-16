@@ -119,7 +119,9 @@ Sub chunkedSetupRows()
         suffix = " of " + tostr(m.totalSize)
 
         for i = 0 to numRows% - 1
-            if i = numRows% - 1 then
+            if RegRead("section_row_labels", "preferences", "1") <> "1" then
+                m.names.Push("")
+            else if i = numRows% - 1 then
                 m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr(m.totalSize) + suffix)
             else
                 m.names.Push(tostr(i * m.rowSize + 1) + " - " + tostr((i + 1) * m.rowSize) + suffix)

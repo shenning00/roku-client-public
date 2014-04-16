@@ -59,7 +59,16 @@ Sub dialogRefresh()
     m.Screen.EnableBackButton(true)
     m.Screen.EnableOverlay(overlay)
     if m.Title <> invalid then m.Screen.SetTitle(m.Title)
-    if m.Text <> invalid then m.Screen.SetText(m.Text)
+
+    if m.Text <> invalid then
+        if islist(m.Text) then
+            for each paragraph in m.Text
+                m.Screen.SetText(paragraph)
+            next
+        else
+            m.Screen.SetText(m.Text)
+        end if
+    end if
 
     if m.Buttons.Count() = 0 then
         m.Buttons.Push({ok: "Ok"})

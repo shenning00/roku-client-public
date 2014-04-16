@@ -41,6 +41,8 @@ Function createGridScreen(viewController) As Object
     screen.SetVisibility = gridSetVisibility
     screen.SetFocusedItem = gridSetFocusedItem
 
+    screen.UpdateThumbUrl = gridUpdateThumbUrl
+
     return screen
 End Function
 
@@ -106,15 +108,8 @@ Function gridInitializeRows(clear=true)
     m.Screen.SetupLists(names.Count())
     m.Screen.SetListNames(names)
 
-    home = GetViewController().home
-    if home <> invalid and home.screenid <> m.screenid and RegRead("enable_filtered_browsing", "preferences", "1") <> "1" then
-        Debug("Disable SetListPosterStyles() -- prevent a crash.")
-        m.rowStyles = invalid
-        m.rowStyle = "portrait"
-    else
-        m.Screen.SetListPosterStyles(rowStyles)
-        m.rowStyles = rowStyles
-    end if
+    m.Screen.SetListPosterStyles(rowStyles)
+    m.rowStyles = rowStyles
 
     m.rowVisibility = []
 
@@ -126,10 +121,12 @@ Function gridInitializeRows(clear=true)
         m.lastUpdatedSize[row] = m.contentArray[row].Count()
         m.Screen.SetContentList(row, m.contentArray[row])
         if m.lastUpdatedSize[row] = 0 AND m.Loader.GetLoadStatus(row) = 2 then
-            Debug("Hiding row " + tostr(row) + " in InitializeRows")
-            if home <> invalid and home.screenid = m.screenid and m.loader.rowindexes["misc"] = row then
-                Debug("Ignore setting visibility to false for the HomeScreen misc row")
+            placeholder = m.Loader.GetPlaceholder(row, true)
+            if placeholder <> invalid then
+                m.contentArray[row] = [placeholder]
+                m.Screen.SetContentList(row, m.contentArray[row])
             else
+                Debug("Hiding row " + tostr(row) + " in InitializeRows")
                 m.SetVisibility(row, false)
             end if
         end if
@@ -207,10 +204,14 @@ Function gridHandleMessage(msg) As Boolean
                     breadcrumbs = [m.Loader.GetNames()[msg.GetIndex()], item.Title]
                 end if
 
-                m.Facade = CreateObject("roGridScreen")
-                m.Facade.Show()
+                child = m.ViewController.CreateScreenForItem(context, index, breadcrumbs, false)
 
-                m.ViewController.CreateScreenForItem(context, index, breadcrumbs)
+                if child <> invalid then
+                    m.Facade = CreateObject("roGridScreen")
+                    m.Facade.Show()
+                    child.Show()
+                    child = invalid
+                end if
             end if
         else if msg.isListItemFocused() then
             ' If the user is getting close to the limit of what we've
@@ -280,10 +281,17 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
     ' Don't bother showing empty rows
     if data.Count() = 0 then
         if m.Screen <> invalid AND m.Loader.GetLoadStatus(row) = 2 then
-            ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
-            Debug("Hiding row " + tostr(row) + " in OnDataLoaded")
-            m.SetVisibility(row, false)
-            m.Screen.SetContentList(row, data)
+            placeholder = m.Loader.GetPlaceholder(row, true)
+            if placeholder <> invalid then
+                m.UpdateThumbUrl(placeholder, row)
+                m.contentArray[row] = [placeholder]
+                m.Screen.SetContentList(row, m.contentArray[row])
+            else
+                ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
+                Debug("Hiding row " + tostr(row) + " in OnDataLoaded")
+                m.SetVisibility(row, false)
+                m.Screen.SetContentList(row, data)
+            end if
         end if
 
         if NOT m.hasData then
@@ -340,25 +348,7 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
 
     ' Update thumbs according to the row style they were loaded in
     for i = startItem to startItem + count - 1
-        item = data[i]
-
-        if m.rowStyles = invalid and m.rowStyle <> invalid then
-            curRowStyle = m.rowStyle
-        else
-            curRowStyle = m.rowStyles[row]
-        end if
-
-        if item.ThumbProcessed <> invalid AND item.ThumbProcessed <> curRowStyle then
-            item.ThumbProcessed = curRowStyle
-            if item.ThumbUrl <> invalid AND item.server <> invalid then
-                sizes = ImageSizesGrid(curRowStyle)
-                item.SDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.sdWidth, sizes.sdHeight)
-                item.HDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.hdWidth, sizes.hdHeight)
-            else if item.ThumbUrl = invalid
-                item.SDPosterURL = "file://pkg:/images/BlankPoster_" + curRowStyle + ".png"
-                item.HDPosterURL = "file://pkg:/images/BlankPoster_" + curRowStyle + ".png"
-            end if
-        end if
+        m.UpdateThumbUrl(data[i], row)
     end for
 
     m.hasData = true
@@ -465,6 +455,7 @@ Sub gridOnTimerExpired(timer)
         m.Activate(invalid)
     else if timer.Name = "gridRowVisibilityChange" then
         gridCloseRowVisibilityFacade(timer)
+        m.timerRowVisibility = invalid
     end if
 End Sub
 
@@ -498,8 +489,6 @@ Sub gridSetVisibility(row, visible)
         m.timerRowVisibility.SetDuration(1000)
         m.ViewController.AddTimer(m.timerRowVisibility, m)
     end if
-    m.timerRowVisibility.Active = true
-    m.timerRowVisibility.Mark()
 
     ' mark and set rowVisbility as true/false
     m.rowVisibility[row] = visible
@@ -525,3 +514,23 @@ sub gridCloseRowVisibilityFacade(timer)
         timer.listener.facadeRowVisibility = invalid
     end if
 end sub
+
+Sub gridUpdateThumbUrl(item, row)
+    if m.rowStyles = invalid and m.rowStyle <> invalid then
+        curRowStyle = m.rowStyle
+    else
+        curRowStyle = m.rowStyles[row]
+    end if
+
+    if item.ThumbProcessed <> invalid AND item.ThumbProcessed <> curRowStyle then
+        item.ThumbProcessed = curRowStyle
+        if item.ThumbUrl <> invalid AND item.server <> invalid then
+            sizes = ImageSizesGrid(curRowStyle)
+            item.SDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.sdWidth, sizes.sdHeight)
+            item.HDPosterURL = item.server.TranscodedImage(item.sourceUrl, item.ThumbUrl, sizes.hdWidth, sizes.hdHeight)
+        else if item.ThumbUrl = invalid
+            item.SDPosterURL = "file://pkg:/images/BlankPoster_" + curRowStyle + ".png"
+            item.HDPosterURL = "file://pkg:/images/BlankPoster_" + curRowStyle + ".png"
+        end if
+    end if
+End Sub

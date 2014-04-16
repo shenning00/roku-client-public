@@ -128,14 +128,13 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     viewGroup = item.viewGroup
     if viewGroup = invalid then viewGroup = ""
 
-    screen = CreateObject("roAssociativeArray")
-
     ' NOTE: We don't support switching between them as a preference, but
     ' the poster screen can be used anywhere the grid is used below. By
     ' default the poster screen will try to decide whether or not to
     ' include the filter bar that makes it more grid like, but it can
     ' be forced by setting screen.FilterMode = true.
 
+    screen = invalid
     screenName = invalid
 
     if contentType = "movie" OR contentType = "episode" OR contentType = "clip" then
@@ -159,9 +158,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen.SetListStyle("flat-episodic", "zoom-to-fill")
         screenName = "Album Poster"
     else if item.key = "nowplaying" then
-        if m.IsMusicNowPlaying() then
-            screen = invalid
-        else
+        if NOT m.IsMusicNowPlaying() then
             AudioPlayer().ContextScreenID = m.nextScreenId
             screen = createAudioSpringboardScreen(AudioPlayer().Context, AudioPlayer().CurIndex, m)
             screenName = "Now Playing"
@@ -200,7 +197,6 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     else if viewGroup = "Store:Info" then
         dialog = createPopupMenu(item)
         dialog.Show()
-        screen = invalid
     else if viewGroup = "secondary" then
         if RegRead("enable_filtered_browsing", "preferences", "1") = "1" then
             screen = createGridScreenForItem(item, m)
@@ -231,7 +227,16 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     else if item.settings = "1"
         screen = createSettingsScreen(item, m)
         screenName = "Settings"
-    else
+    else if item.paragraphs <> invalid then
+        if item.screenType = "paragraph" then
+            screen = createParagraphScreen(item.header, item.paragraphs, m)
+        else
+            dialog = createBaseDialog()
+            dialog.Title = item.header
+            dialog.Text = item.paragraphs
+            dialog.Show()
+        end if
+    else if item.key <> invalid
         ' Where do we capture channel directory?
         Debug("Creating a default view for contentType=" + tostr(contentType) + ", viewGroup=" + tostr(viewGroup))
         screen = createPosterScreen(item, m)

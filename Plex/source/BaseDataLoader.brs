@@ -15,6 +15,7 @@ Sub initDataLoader(loader)
     loader.GetPendingRequestCount = baseGetPendingRequestCount
     loader.RefreshData = baseRefreshData
     loader.GetContextAndIndexForItem = baseGetContextAndIndexForItem
+    loader.GetPlaceholder = baseGetPlaceholder
 
     loader.Listener = invalid
 End Sub
@@ -62,5 +63,9 @@ Function createDummyLoader()
 End Function
 
 Function baseGetContextAndIndexForItem(row, column)
+    return invalid
+End Function
+
+Function baseGetPlaceholder(row, empty)
     return invalid
 End Function

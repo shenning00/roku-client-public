@@ -81,6 +81,17 @@ Function validint(obj As Dynamic) As Integer
 End Function
 
 '******************************************************
+'islist
+'
+'Determine if the given object supports the ifList interface
+'******************************************************
+Function islist(obj as dynamic) As Boolean
+    if obj = invalid return false
+    if GetInterface(obj, "ifArray") = invalid return false
+    return true
+End Function
+
+'******************************************************
 ' validstr
 '
 ' always return a valid string. if the argument is

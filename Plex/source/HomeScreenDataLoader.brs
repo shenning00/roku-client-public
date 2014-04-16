@@ -15,6 +15,7 @@ Function createHomeScreenDataLoader(listener)
     loader.GetLoadStatus = homeGetLoadStatus
     loader.GetPendingRequestCount = loaderGetPendingRequestCount
     loader.RefreshData = homeRefreshData
+    loader.GetPlaceholder = homeGetPlaceholder
     loader.OnUrlEvent = homeOnUrlEvent
     loader.OnServerDiscovered = homeOnServerDiscovered
     loader.OnMyPlexChange = homeOnMyPlexChange
@@ -93,14 +94,14 @@ Sub homeSetupRows()
     m.RowIndexes = {}
 
     rows = [
-        { title: "Channels", key: "channels", style: "square", visibility_key: "row_visibility_channels" },
-        { title: "Library Sections", key: "sections", style: "square", visibility_key: "row_visibility_sections" },
-        { title: "On Deck", key: "on_deck", style: "portrait", visibility_key: "row_visibility_ondeck" },
-        { title: "Recently Added", key: "recently_added", style: "portrait", visibility_key: "row_visibility_recentlyadded" },
-        { title: "Queue", key: "queue", style: "landscape", visibility_key: "playlist_view_queue" },
-        { title: "Recommendations", key: "recommendations", style: "landscape", visibility_key: "playlist_view_recommendations" },
-        { title: "Shared Library Sections", key: "shared_sections", style: "square", visibility_key: "row_visibility_shared_sections" },
-        { title: "Miscellaneous", key: "misc", style: "square" }
+        { title: "Channels", key: "channels", style: "square", visibility_key: "row_visibility_channels", account_required: false },
+        { title: "Library Sections", key: "sections", style: "square", visibility_key: "row_visibility_sections", account_required: false },
+        { title: "On Deck", key: "on_deck", style: "portrait", visibility_key: "row_visibility_ondeck", account_required: false },
+        { title: "Recently Added", key: "recently_added", style: "portrait", visibility_key: "row_visibility_recentlyadded", account_required: false },
+        { title: "Queue", key: "queue", style: "landscape", visibility_key: "playlist_view_queue", account_required: true },
+        { title: "Recommendations", key: "recommendations", style: "landscape", visibility_key: "playlist_view_recommendations", account_required: true },
+        { title: "Shared Library Sections", key: "shared_sections", style: "square", visibility_key: "row_visibility_shared_sections", account_required: true },
+        { title: "Miscellaneous", key: "misc", style: "square", account_required: false }
     ]
     ReorderItemsByKeyPriority(rows, RegRead("home_row_order", "preferences", ""))
 
@@ -110,7 +111,7 @@ Sub homeSetupRows()
             visibility = RegRead(row.visibility_key, "preferences", "")
         end if
 
-        if visibility <> "hidden" then
+        if visibility <> "hidden" AND NOT (row.account_required AND NOT MyPlexManager().IsSignedIn) then
             m.RowIndexes[row.key] = m.CreateRow(row.title, row.style)
         else
             m.RowIndexes[row.key] = -1
@@ -693,6 +694,51 @@ Function homeGetLoadStatus(row)
     return m.contentArray[row].loadStatus
 End Function
 
+Function homeGetPlaceholder(row, empty)
+    if NOT empty then return invalid
+
+    dummy = CreateObject("roAssociativeArray")
+    dummy.Key = invalid
+    dummy.ThumbUrl = invalid
+    dummy.ThumbProcessed = ""
+    dummy.paragraphs = []
+
+    if row = m.RowIndexes["sections"] then
+        dummy.Title = "No Library Sections"
+        dummy.header = dummy.Title
+        dummy.paragraphs.Push("Either you don't have a Plex Media Server running or it couldn't be reached.")
+        dummy.paragraphs.Push("Plex Media Server can be installed on your computer from https://plex.tv/downloads")
+        dummy.paragraphs.Push("If you'll never use Library Sections, you can hide this row under Preferences -> Home Screen")
+    else if row = m.RowIndexes["channels"] then
+        dummy.Title = "No Channels"
+        dummy.header = dummy.Title
+        dummy.paragraphs.Push("Either you don't have a Plex Media Server running or it couldn't be reached.")
+        dummy.paragraphs.Push("Plex Media Server can be installed on your computer from https://plex.tv/downloads")
+        dummy.paragraphs.Push("If you'll never use Channels, you can hide this row under Preferences -> Home Screen")
+    else if row = m.RowIndexes["on_deck"] then
+        dummy.Title = "No On Deck Items"
+        dummy.header = dummy.Title
+        dummy.paragraphs.Push("Either you don't have a Plex Media Server running or it couldn't be reached.")
+        dummy.paragraphs.Push("Plex Media Server can be installed on your computer from https://plex.tv/downloads")
+        dummy.paragraphs.Push("If you'll never use On Deck, you can hide this row under Preferences -> Home Screen")
+    else if row = m.RowIndexes["recently_added"] then
+        dummy.Title = "No Recently Added Items"
+        dummy.header = dummy.Title
+        dummy.paragraphs.Push("Either you don't have a Plex Media Server running or it couldn't be reached.")
+        dummy.paragraphs.Push("Plex Media Server can be installed on your computer from https://plex.tv/downloads")
+        dummy.paragraphs.Push("If you'll never use Recently Added, you can hide this row under Preferences -> Home Screen")
+    else if row = m.RowIndexes["shared_sections"] then
+        dummy.Title = "No Library Sections"
+        dummy.header = dummy.Title
+        dummy.paragraphs.Push("No library sections have been shared with you.")
+        dummy.paragraphs.Push("If you'll never use Shared Library Sections, you can hide this row under Preferences -> Home Screen")
+    else
+        dummy = invalid
+    end if
+
+    return dummy
+End Function
+
 Sub homeRefreshData()
     ' The home screen is never empty, make sure we don't close ourself.
     m.Listener.hasData = true
@@ -777,17 +823,6 @@ Sub homeOnTimerExpired(timer)
     else if timer.Name = "HideServerRows" then
         Debug("Checking to see if we should hide any server rows")
         row_keys = ["channels", "sections", "on_deck", "recently_added", "shared_sections"]
-
-        ' This is a total hack, but because of the mixed aspect grid's propensity
-        ' to crash, we need to focus something else ASAP if we're going to hide
-        ' the current row. If we wait until we naturally find the row in the
-        ' loop, it's too late.
-        focusedIndex = validint(m.Listener.selectedRow)
-        focusedStatus = m.contentArray[focusedIndex]
-        if focusedStatus.pendingRequests = 0 AND focusedStatus.content.Count() = 0 then
-            Debug("Looks like we're going to hide the focused row, force loading misc")
-            m.LoadMoreContent(m.RowIndexes["misc"], 0)
-        end if
 
         for each row_key in row_keys
             index = m.RowIndexes[row_key]

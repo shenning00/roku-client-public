@@ -43,6 +43,12 @@ Function createGridScreen(viewController) As Object
 
     screen.UpdateThumbUrl = gridUpdateThumbUrl
 
+    if GetGlobal("IsHD") then
+        screen.rowSize = 5
+    else
+        screen.rowSize = 4
+    end if
+
     return screen
 End Function
 
@@ -53,13 +59,7 @@ Function createGridScreenForItem(item, viewController, style="square") As Object
     obj.Item = item
 
     if RegRead("enable_filtered_browsing", "preferences", "1") = "1" AND NOT (item.ContentType = "section" AND item.Filters = invalid) then
-        if GetGlobal("IsHD") then
-            rowSize = 5
-        else
-            rowSize = 4
-        end if
-
-        obj.Loader = createChunkedLoader(item, rowSize)
+        obj.Loader = createChunkedLoader(item, obj.rowSize)
         obj.Loader.Listener = obj
         obj.filtered = (item.Filters = "1")
         obj.ignoreRowNameForBreadcrumbs = true
@@ -501,6 +501,10 @@ End Sub
 
 Sub gridSetFocusedItem(row, col)
     if m.rowVisibility[row] = true then
+        ' Only allow focusing a non-zero index if there's enough content to
+        ' fill the screen.
+        if validint(m.lastUpdatedSize[row]) < m.rowSize then col = 0
+
         Debug("Focusing " + tostr(row) + ", " + tostr(col))
         m.Screen.SetFocusedListItem(row, col)
     else

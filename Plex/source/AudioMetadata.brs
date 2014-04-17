@@ -96,6 +96,7 @@ Function newTrackMetadata(container, item, detailed=true) As Object
     end if
 
     media = item.Media[0]
+    bitrate = 0
 
     ' TODO(schuyler): This is super lame. We only look at the codec, so it's
     ' possible to do things like stick AAC inside MKA and do the wrong thing.
@@ -104,6 +105,7 @@ Function newTrackMetadata(container, item, detailed=true) As Object
         part = media.Part[0]
         codec = media@audioCodec
         key = part@key
+        bitrate = validint(strtoi(firstOf(media@bitrate, "0")))
     else
         codec = invalid
         key = item@key
@@ -140,6 +142,12 @@ Function newTrackMetadata(container, item, detailed=true) As Object
     if codec = "mp3" OR codec = "wma" OR codec = "aac" OR codec = "flac" then
         track.StreamFormat = codec
         track.Url = FullUrl(track.server.serverUrl, track.sourceUrl, key)
+
+        ' If we're direct playing a FLAC, bitrate can be required, and supposedly
+        ' this is the only way to do it.
+        if bitrate > 0 then
+            track.Streams = [{ url: track.Url, bitrate: bitrate }]
+        end if
     else
         track.StreamFormat = "mp3"
         track.Url = track.server.TranscodingAudioUrl(key, track)

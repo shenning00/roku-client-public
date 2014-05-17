@@ -103,6 +103,7 @@ Sub chunkedSetupRows()
     xml = CreateObject("roXMLElement")
     if xml.parse(response) then
         m.totalSize = firstOf(xml@totalSize, "0").toInt()
+        m.viewGroup = xml@viewGroup
     end if
 
     firstRowContent = firstOf(m.rowContent[0], [])
@@ -144,7 +145,13 @@ Sub chunkedSetupRows()
         m.styles.Push(m.FilterOptions.GetSelectedType().gridStyle)
     else
         ' TODO(schuyler): Set this based on the content type
-        m.styles.Push("square")
+        ' Movie and TV Shows use portrait to maintain consistency. Others will default
+        ' to square and can be modified later if needed.
+        if m.viewGroup <> invalid and (m.viewGroup = "movie" OR m.viewGroup = "show" OR m.viewGroup = "season" OR m.viewGroup = "episode") then
+            m.styles.Push("portrait")
+        else
+            m.styles.Push("square")
+        end if
     end if
 End Sub
 

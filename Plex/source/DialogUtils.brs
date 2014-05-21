@@ -101,21 +101,17 @@ Sub dialogShow(blocking=false)
     m.ViewController.UpdateScreenProperties(m)
     m.ViewController.PushScreen(m)
 
-    ' We'd prefer to always use the global message port, but there are some
-    ' places where we use dialogs that it would be incredibly difficult to
-    ' have dialog.Show() return immediately. In those cases, we'll create
-    ' our own message port and show the dialog in a blocking fashion.
-
-    if blocking then
-        m.Port = CreateObject("roMessagePort")
-    end if
+    ' We always use the global message port, but there are some places that
+    ' want the call to dialog.Show() to appear blocking instead of returning
+    ' immediately. In those cases, we run the loop here, even though the
+    ' message is processed in the usual way.
 
     m.Refresh()
 
     if blocking then
+        timeout = 0
         while m.ScreenID = m.ViewController.Screens.Peek().ScreenID
-            msg = wait(0, m.Port)
-            m.HandleMessage(msg)
+            timeout = m.ViewController.ProcessOneMessage(timeout)
         end while
     end if
 End Sub

@@ -47,6 +47,7 @@ Function createViewController() As Object
     controller.CloseScreen = vcCloseScreen
 
     controller.Show = vcShow
+    controller.ProcessOneMessage = vcProcessOneMessage
     controller.OnInitialized = vcOnInitialized
     controller.UpdateScreenProperties = vcUpdateScreenProperties
     controller.AddBreadcrumbs = vcAddBreadcrumbs
@@ -656,71 +657,7 @@ Sub vcShow()
 
     timeout = 0
     while m.screens.Count() > 0 OR NOT AppManager().IsInitialized()
-        m.WebServer.prewait()
-        msg = wait(timeout, m.GlobalMessagePort)
-        if msg <> invalid then
-            ' Printing debug information about every message may be overkill
-            ' regardless, but note that URL events don't play by the same rules,
-            ' and there's no ifEvent interface to check for. Sigh.
-            'if type(msg) = "roUrlEvent" OR type(msg) = "roSocketEvent" OR type(msg) = "roChannelStoreEvent" then
-            '    Debug("Processing " + type(msg) + " (top of stack " + type(m.GetActiveScreen()) + ")")
-            'else
-            '    Debug("Processing " + type(msg) + " (top of stack " + type(m.GetActiveScreen()) + "): " + tostr(msg.GetType()) + ", " + tostr(msg.GetIndex()) + ", " + tostr(msg.GetMessage()))
-            'end if
-
-            for i = m.screens.Count() - 1 to 0 step -1
-                if m.screens[i].HandleMessage(msg) then exit for
-            end for
-
-            ' Process URL events. Look up the request context and call a
-            ' function on the listener.
-            if type(msg) = "roUrlEvent" AND msg.GetInt() = 1 then
-                id = msg.GetSourceIdentity().tostr()
-                requestContext = m.PendingRequests[id]
-                if requestContext <> invalid then
-                    m.PendingRequests.Delete(id)
-                    if requestContext.Listener <> invalid then
-                        requestContext.Listener.OnUrlEvent(msg, requestContext)
-                    end if
-                    requestContext = invalid
-                end if
-            else if type(msg) = "roSocketEvent" then
-                listener = m.SocketListeners[msg.getSocketID().tostr()]
-                if listener <> invalid then
-                    listener.OnSocketEvent(msg)
-                    listener = invalid
-                else
-                    ' Assume it was for the web server (it won't hurt if it wasn't)
-                    m.WebServer.postwait()
-                end if
-            else if type(msg) = "roAudioPlayerEvent" then
-                AudioPlayer().HandleMessage(msg)
-            else if type(msg) = "roSystemLogEvent" then
-                msgInfo = msg.GetInfo()
-                if msgInfo.LogType = "bandwidth.minute" then
-                    GetGlobalAA().AddReplace("bandwidth", msgInfo.Bandwidth)
-                end if
-            else if type(msg) = "roChannelStoreEvent" then
-                AppManager().HandleChannelStoreEvent(msg)
-            else if msg.isRemoteKeyPressed() and msg.GetIndex() = 10 then
-                m.CreateContextMenu()
-            end if
-        end if
-
-        ' Check for any expired timers
-        timeout = 0
-        for each timerID in m.Timers
-            timer = m.Timers[timerID]
-            if timer.IsExpired() then
-                timer.Listener.OnTimerExpired(timer)
-            end if
-
-            ' Make sure we set a timeout on the wait so we'll catch the next timer
-            remaining = timer.RemainingMillis()
-            if remaining > 0 AND (timeout = 0 OR remaining < timeout) then
-                timeout = remaining
-            end if
-        next
+        timeout = m.ProcessOneMessage(timeout)
     end while
 
     ' Clean up some references on the way out
@@ -735,6 +672,76 @@ Sub vcShow()
 
     Debug("Finished global message loop")
 End Sub
+
+Function vcProcessOneMessage(timeout)
+    m.WebServer.prewait()
+    msg = wait(timeout, m.GlobalMessagePort)
+    if msg <> invalid then
+        ' Printing debug information about every message may be overkill
+        ' regardless, but note that URL events don't play by the same rules,
+        ' and there's no ifEvent interface to check for. Sigh.
+        'if type(msg) = "roUrlEvent" OR type(msg) = "roSocketEvent" OR type(msg) = "roChannelStoreEvent" then
+        '    Debug("Processing " + type(msg) + " (top of stack " + type(m.GetActiveScreen()) + ")")
+        'else
+        '    Debug("Processing " + type(msg) + " (top of stack " + type(m.GetActiveScreen()) + "): " + tostr(msg.GetType()) + ", " + tostr(msg.GetIndex()) + ", " + tostr(msg.GetMessage()))
+        'end if
+
+        for i = m.screens.Count() - 1 to 0 step -1
+            if m.screens[i].HandleMessage(msg) then exit for
+        end for
+
+        ' Process URL events. Look up the request context and call a
+        ' function on the listener.
+        if type(msg) = "roUrlEvent" AND msg.GetInt() = 1 then
+            id = msg.GetSourceIdentity().tostr()
+            requestContext = m.PendingRequests[id]
+            if requestContext <> invalid then
+                m.PendingRequests.Delete(id)
+                if requestContext.Listener <> invalid then
+                    requestContext.Listener.OnUrlEvent(msg, requestContext)
+                end if
+                requestContext = invalid
+            end if
+        else if type(msg) = "roSocketEvent" then
+            listener = m.SocketListeners[msg.getSocketID().tostr()]
+            if listener <> invalid then
+                listener.OnSocketEvent(msg)
+                listener = invalid
+            else
+                ' Assume it was for the web server (it won't hurt if it wasn't)
+                m.WebServer.postwait()
+            end if
+        else if type(msg) = "roAudioPlayerEvent" then
+            AudioPlayer().HandleMessage(msg)
+        else if type(msg) = "roSystemLogEvent" then
+            msgInfo = msg.GetInfo()
+            if msgInfo.LogType = "bandwidth.minute" then
+                GetGlobalAA().AddReplace("bandwidth", msgInfo.Bandwidth)
+            end if
+        else if type(msg) = "roChannelStoreEvent" then
+            AppManager().HandleChannelStoreEvent(msg)
+        else if msg.isRemoteKeyPressed() and msg.GetIndex() = 10 then
+            m.CreateContextMenu()
+        end if
+    end if
+
+    ' Check for any expired timers
+    timeout = 0
+    for each timerID in m.Timers
+        timer = m.Timers[timerID]
+        if timer.IsExpired() then
+            timer.Listener.OnTimerExpired(timer)
+        end if
+
+        ' Make sure we set a timeout on the wait so we'll catch the next timer
+        remaining = timer.RemainingMillis()
+        if remaining > 0 AND (timeout = 0 OR remaining < timeout) then
+            timeout = remaining
+        end if
+    next
+
+    return timeout
+End Function
 
 Sub vcOnInitialized()
     ' As good a place as any, note that we've started

@@ -1553,13 +1553,6 @@ Function createSectionDisplayPrefsScreen(viewController) As Object
         { title: "Disabled", EnumValue: "0" }
     ]
 
-    ' Enabled filters and the chunked grid?
-    obj.Prefs["enable_filtered_browsing"] = {
-        values: yes_no,
-        heading: "Use filters when browsing sections?",
-        default: "1"
-    }
-
     ' Remember last used filter?
     obj.Prefs["remember_last_filter"] = {
         values: yes_no,
@@ -1600,27 +1593,19 @@ Function createSectionDisplayPrefsScreen(viewController) As Object
         { title: "By Resolution", key: "resolution" },
         { title: "By First Letter", key: "firstCharacter" },
         { title: "By Folder", key: "folder" },
-        { title: "Search", key: "_search_" }
+        { title: "Search", key: "_search_" },
+        { title: "Filters", key: "_filters_" }
     ]
     obj.Prefs["section_row_order"] = {
         values: values,
         default: ""
     }
 
-    ' Row labels on filtered grids
-    obj.Prefs["section_row_labels"] = {
-        values: yes_no,
-        heading: "Show row labels on grids?",
-        default: "1"
-    }
-
     obj.Screen.SetHeader("Change the appearance of your sections")
 
-    obj.AddItem({title: "Filtered Browsing"}, "enable_filtered_browsing", obj.GetEnumValue("enable_filtered_browsing"))
     obj.AddItem({title: "Remember Filters"}, "remember_last_filter", obj.GetEnumValue("remember_last_filter"))
     obj.AddItem({title: "TV Series"}, "use_grid_for_series", obj.GetEnumValue("use_grid_for_series"))
     obj.AddItem({title: "Reorder Rows"}, "section_row_order")
-    obj.AddItem({title: "Row Labels"}, "section_row_labels", obj.GetEnumValue("section_row_labels"))
     obj.AddItem({title: "Close"}, "close")
 
     return obj

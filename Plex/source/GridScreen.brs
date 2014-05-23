@@ -33,7 +33,6 @@ Function createGridScreen(viewController) As Object
     screen.hasBeenFocused = false
     screen.ignoreNextFocus = false
     screen.recreating = false
-    screen.filtered = false
     screen.ignoreRowNameForBreadcrumbs = false
 
     screen.OnDataLoaded = gridOnDataLoaded
@@ -58,18 +57,32 @@ Function createGridScreenForItem(item, viewController, style="square") As Object
 
     obj.Item = item
 
-    if RegRead("enable_filtered_browsing", "preferences", "1") = "1" AND NOT (item.ContentType = "section" AND item.Filters = invalid) then
-        obj.Loader = createChunkedLoader(item, obj.rowSize)
-        obj.Loader.Listener = obj
-        obj.filtered = (item.Filters = "1")
-        obj.ignoreRowNameForBreadcrumbs = true
-    else
-        container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
-        container.SeparateSearchItems = true
-        obj.Loader = createPaginatedLoader(container, 8, 75, obj.Item)
-        obj.Loader.styles = [style]
-        obj.Loader.Listener = obj
+    container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)
+    container.SeparateSearchItems = true
+
+    ' If this is a library with support for filters, add a dummy item for the
+    ' filter options to the search row.
+    if item.Filters = "1" then
+        filters = CreateObject("roAssociativeArray")
+        filters.server = item.server
+        filters.sourceUrl = FullUrl(item.server.serverUrl, item.sourceUrl, item.key)
+        filters.ContentType = "filters"
+        filters.Key = "_filters_"
+        filters.Title = "Filters"
+        filters.SectionType = item.ContentType
+        filters.ShortDescriptionLine1 = "Filters"
+        filters.Description = "Filter content in this section"
+        filters.SDPosterURL = "file://pkg:/images/gear.png"
+        filters.HDPosterURL = "file://pkg:/images/gear.png"
+        filters.FilterOptions = createFilterOptions(item)
+
+        container.FilterOptions = filters.FilterOptions
+        container.search.Push(filters)
     end if
+
+    obj.Loader = createPaginatedLoader(container, 8, 75, obj.Item)
+    obj.Loader.styles = [style]
+    obj.Loader.Listener = obj
 
     ' Don't play theme music on top of grid screens on the older Roku models.
     ' It's not worth the DestroyAndRecreate headache.
@@ -82,6 +95,7 @@ Function createGridScreenForItem(item, viewController, style="square") As Object
 End Function
 
 Function gridInitializeRows(clear=true)
+    m.Loader.UpdateFilters(false)
     names = m.Loader.GetNames()
     styles = m.Loader.GetRowStyles()
     if clear then m.contentArray.Clear()
@@ -132,16 +146,19 @@ Function gridInitializeRows(clear=true)
         end if
     end for
 
-    if m.filtered AND RegRead("filter_help_shown", "misc") <> invalid then
-        m.SetFocusedItem(1, 0)
-    end if
-
     return true
 End Function
 
 Function showGridScreen() As Integer
-    m.Facade = CreateObject("roGridScreen")
-    m.Facade.Show()
+    if m.Facade = invalid then
+        m.Facade = CreateObject("roGridScreen")
+        m.Facade.Show()
+    end if
+
+    if m.Loader.FilterOptions <> invalid AND NOT m.Loader.FilterOptions.IsInitialized() then
+        m.Loader.FilterOptions.FetchValues(m)
+        return 0
+    end if
 
     totalTimer = createTimer()
 
@@ -169,11 +186,6 @@ Function showGridScreen() As Integer
     end for
 
     totalTimer.PrintElapsedTime("Total initial grid load")
-
-    if m.filtered AND RegRead("filter_help_shown", "misc") = invalid then
-        m.ignoreOnActivate = true
-        m.ViewController.ShowFilterHelp()
-    end if
 
     return 0
 End Function

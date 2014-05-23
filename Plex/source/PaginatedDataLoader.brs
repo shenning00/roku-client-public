@@ -15,6 +15,8 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize, item = inva
 
     loader.contentArray = []
 
+    loader.filteredRow = -1
+
     keys = container.GetKeys()
     for index = 0 to keys.Count() - 1
         status = CreateObject("roAssociativeArray")
@@ -46,6 +48,24 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize, item = inva
         loader.contentArray.Push(status)
     end if
 
+    ' Set up filtered results if we have any
+    loader.FilterOptions = container.FilterOptions
+    if loader.FilterOptions <> invalid then
+        status = CreateObject("roAssociativeArray")
+        status.content = []
+        if loader.FilterOptions.IsActive() then
+            status.loadStatus = 0
+        else
+            status.loadStatus = 2
+        end if
+        status.key = "_filters_"
+        status.name = "Filters"
+        status.pendingRequests = 0
+        status.countLoaded = 0
+
+        loader.contentArray.Push(status)
+    end if
+
     ' Reorder container sections so that frequently accessed sections
     ' are displayed first. Make sure to revert the search row's dummy key
     ' to invalid so we don't try to load it.
@@ -55,6 +75,9 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize, item = inva
         loader.names[index] = status.name
         if status.key = "_search_" then
             status.key = invalid
+        else if status.key = "_filters_" then
+            loader.filteredRow = index
+            status.key = loader.FilterOptions.GetUrl()
         end if
     next
 
@@ -64,6 +87,7 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize, item = inva
     loader.StartRequest = loaderStartRequest
     loader.OnUrlEvent = loaderOnUrlEvent
     loader.GetPendingRequestCount = loaderGetPendingRequestCount
+    loader.UpdateFilters = loaderUpdateFilters
 
     ' When we know the full size of a container, we'll populate an array with
     ' dummy items so that the counts show up correctly on grid screens. It
@@ -125,6 +149,8 @@ Function loaderLoadMoreContent(focusedIndex, extraRows=0)
 End Function
 
 Sub loaderRefreshData()
+    m.UpdateFilters(true)
+
     for row = 0 to m.contentArray.Count() - 1
         status = m.contentArray[row]
         if status.key <> invalid AND status.loadStatus <> 0 then
@@ -262,3 +288,25 @@ Function loaderKeyFilter(key, itemType)
     end if
     return key
 end Function
+
+Sub loaderUpdateFilters(updateScreen)
+    if m.filteredRow <> -1 then
+        status = m.contentArray[m.filteredRow]
+        status.name = "Filters: " + m.FilterOptions.GetFiltersLabel() + " / Sort: " + m.FilterOptions.GetSortsLabel()
+        m.names[m.filteredRow] = status.name
+
+        newFilteredUrl = m.FilterOptions.GetUrl()
+        if newFilteredUrl <> status.key then
+            if status.key <> invalid then
+                m.Listener.SetFocusedItem(m.filteredRow, 0)
+            end if
+
+            status.content = []
+            status.key = newFilteredUrl
+        end if
+
+        if updateScreen then
+            m.Listener.Screen.SetListName(m.filteredRow, status.name)
+        end if
+    end if
+End Sub

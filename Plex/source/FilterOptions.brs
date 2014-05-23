@@ -44,6 +44,7 @@ Function createFilterOptions(section)
     obj.OnUrlEvent = foOnUrlEvent
     obj.IsInitialized = foIsInitialized
     obj.InitializeOptionsFromString = foInitializeOptionsFromString
+    obj.IsActive = foIsActive
 
     obj.cacheKey = tostr(section.server.machineID) + "!" + tostr(section.key)
 
@@ -299,7 +300,7 @@ Sub foReset()
 End Sub
 
 Function foGetUrl()
-    builder = NewHttp(m.Section.key + "/all")
+    builder = NewHttp("all")
 
     ' Always add type, nice and easy
     builder.AddParam("type", m.GetSelectedType().EnumValue)
@@ -348,4 +349,11 @@ Function foGetUrl()
     end if
 
     return builder.Http.GetUrl()
+End Function
+
+Function foIsActive()
+    ' Reset the cursor in the hashes so we can see if they're empty. I know.
+    m.currentFilters.Reset()
+    m.currentSorts.Reset()
+    return (m.currentTypeIndex <> 0 OR m.currentFilters.IsNext() OR m.currentSorts.IsNext())
 End Function

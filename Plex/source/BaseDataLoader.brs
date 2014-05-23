@@ -16,6 +16,7 @@ Sub initDataLoader(loader)
     loader.RefreshData = baseRefreshData
     loader.GetContextAndIndexForItem = baseGetContextAndIndexForItem
     loader.GetPlaceholder = baseGetPlaceholder
+    loader.UpdateFilters = baseUpdateFilters
 
     loader.Listener = invalid
 End Sub
@@ -69,3 +70,6 @@ End Function
 Function baseGetPlaceholder(row, empty)
     return invalid
 End Function
+
+Sub baseUpdateFilters(updateScreen)
+End Sub

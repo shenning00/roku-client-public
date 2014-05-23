@@ -78,10 +78,11 @@ Function createGridScreenForItem(item, viewController, style="square") As Object
 
         container.FilterOptions = filters.FilterOptions
         container.search.Push(filters)
+
+        style = filters.FilterOptions.GetSelectedType().gridStyle
     end if
 
-    obj.Loader = createPaginatedLoader(container, 8, 75, obj.Item)
-    obj.Loader.styles = [style]
+    obj.Loader = createPaginatedLoader(container, 8, 75, obj.Item, style)
     obj.Loader.Listener = obj
 
     ' Don't play theme music on top of grid screens on the older Roku models.

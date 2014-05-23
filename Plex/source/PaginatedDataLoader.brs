@@ -3,7 +3,7 @@
 '* like the grid screen that want to load additional data in the background.
 '*
 
-Function createPaginatedLoader(container, initialLoadSize, pageSize, item = invalid)
+Function createPaginatedLoader(container, initialLoadSize, pageSize, item = invalid, defaultStyle="square")
     loader = CreateObject("roAssociativeArray")
     initDataLoader(loader)
 
@@ -66,6 +66,27 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize, item = inva
         loader.contentArray.Push(status)
     end if
 
+    loader.styles = []
+
+    ' Most rows should just use the default style, but override some known exceptions.
+    if m.StyleOverrides = invalid then
+        m.StyleOverrides = {
+            collection: "square",
+            genre: "square",
+            year: "square",
+            decade: "square",
+            director: "square",
+            actor: "portrait",
+            country: "square",
+            contentRating: "square",
+            rating: "square",
+            resolution: "square",
+            firstCharacter: "square",
+            folder: "square",
+            _search_: "square"
+        }
+    end if
+
     ' Reorder container sections so that frequently accessed sections
     ' are displayed first. Make sure to revert the search row's dummy key
     ' to invalid so we don't try to load it.
@@ -73,6 +94,7 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize, item = inva
     for index = 0 to loader.contentArray.Count() - 1
         status = loader.contentArray[index]
         loader.names[index] = status.name
+        loader.styles[index] = firstOf(m.StyleOverrides[status.key], defaultStyle)
         if status.key = "_search_" then
             status.key = invalid
         else if status.key = "_filters_" then

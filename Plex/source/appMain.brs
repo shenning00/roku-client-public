@@ -55,6 +55,22 @@ Sub Main(args)
         RegWrite("first_playback_timestamp", tostr(Now().AsSeconds()), "misc")
     end if
 
+    ' Try to put the new filters row in a reasonable position, directly beneath
+    ' the search row.
+    rowOrder = RegRead("section_row_order", "preferences")
+    if rowOrder <> invalid then
+        searchPos = Instr(1, rowOrder, "_search_")
+        searchEndPos = searchPos + Len("_search_")
+        filtersPos = Instr(1, rowOrder, "_filters_")
+        Debug("Current row order: " + rowOrder)
+
+        if searchPos <> 0 AND filtersPos = 0 then
+            newRowOrder = Mid(rowOrder, 1, searchEndPos - 1) + ",_filters_" + Mid(rowOrder, searchEndPos)
+            Debug("Updated row order: " + newRowOrder)
+            RegWrite("section_row_order", newRowOrder, "preferences")
+        end if
+    end if
+
     RegDelete("quality_override", "preferences")
 
     'initialize theme attributes like titles, logos and overhang color

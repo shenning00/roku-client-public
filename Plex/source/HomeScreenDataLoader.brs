@@ -417,8 +417,7 @@ Sub homeOnUrlEvent(msg, requestContext)
         if status <> invalid AND status.pendingRequests = 0 then
             status.loadStatus = 2
             if status.refreshContent <> invalid then
-                status.content = status.refreshContent
-                status.refreshContent = invalid
+                reorderMultiServerContent(status)
             end if
             m.Listener.OnDataLoaded(requestContext.row, status.content, 0, status.content.Count(), true)
         end if
@@ -528,8 +527,7 @@ Sub homeOnUrlEvent(msg, requestContext)
 
         if status.refreshContent <> invalid then
             if status.toLoad.Count() = 0 AND status.pendingRequests = 0 then
-                status.content = status.refreshContent
-                status.refreshContent = invalid
+                reorderMultiServerContent(status)
                 m.Listener.OnDataLoaded(requestContext.row, status.content, 0, status.content.Count(), true)
             end if
         else
@@ -580,8 +578,7 @@ Sub homeOnUrlEvent(msg, requestContext)
 
         if status.refreshContent <> invalid then
             if status.toLoad.Count() = 0 AND status.pendingRequests = 0 then
-                status.content = status.refreshContent
-                status.refreshContent = invalid
+                reorderMultiServerContent(status)
                 m.Listener.OnDataLoaded(requestContext.row, status.content, 0, status.content.Count(), true)
             end if
         else
@@ -764,10 +761,25 @@ Sub homeRefreshData()
         m.CreateAllPlaylistRequests(true)
 
         ' Refresh things that may have changed as a result of our actions.
-        for each name in ["channels", "on_deck"]
+        for each name in ["channels", "on_deck", "recently_added"]
             row = m.RowIndexes[name]
             if row >= 0 then
                 m.contentArray[row].refreshContent = []
+
+                ' Obtain the existing server order before refreshing (multi-server).
+                ' We will still obtain the list even if only one server is loaded as
+                ' it's possible for new servers to appear/respond.
+                m.contentArray[row].refreshContentOrder = []
+                seen = {}
+                for index = 0 to m.contentArray[row].content.count()-1
+                    machineId = m.contentArray[row].content.[index].server.machineid
+                    if machineId <> invalid and NOT seen.DoesExist(machineId) then
+                        m.contentArray[row].refreshContentOrder.push(machineId)
+                        seen[machineId] = machineId
+                    end if
+                end for
+                seen = invalid
+
                 m.contentArray[row].loadedServers.Clear()
             end if
         next
@@ -928,3 +940,41 @@ Sub homeUpdatePendingRequestsForConnectionTesting(owned, increment)
         GetViewController().AddTimer(timer, m)
     end if
 End Sub
+
+' servers response times can vary causing the ordering of items to
+' change when refreshing. We will re-order the items based on the
+' content loaded prior to refreshing.
+
+sub reorderMultiServerContent(status)
+    ' We only need to process the order if we have more than 1 loaded server
+    loadedCount = 0
+    for each loadedServer in status.loadedServers
+        loadedCount = loadedCount+1
+    end for
+
+    if loadedCount > 1 then
+        newOrder = []
+        for each machineId in status.refreshContentOrder
+            for index = 0 to status.refreshContent.count()-1
+                if status.refreshContent[index] <> invalid then
+                    if machineId = status.refreshContent[index].server.machineid then
+                        newOrder.push(status.refreshContent[index])
+                        status.refreshContent.delete(index)
+                        index = index-1
+                    end if
+                end if
+            end for
+        end for
+
+        ' It's possible there may be new servers we don't have an order for.
+        ' Append any "new server" content to the existing array.
+        if status.refreshContent.count() > 0 then newOrder.append(status.refreshContent)
+
+        status.content = newOrder
+    else
+        status.content = status.refreshContent
+    end if
+
+    status.refreshContent = invalid
+    status.refreshContentOrder = invalid
+end sub

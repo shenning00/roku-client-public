@@ -198,11 +198,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         dialog = createPopupMenu(item)
         dialog.Show()
     else if viewGroup = "secondary" then
-        if RegRead("enable_filtered_browsing", "preferences", "1") = "1" then
-            screen = createGridScreenForItem(item, m)
-        else
-            screen = createPosterScreen(item, m)
-        end if
+        screen = createPosterScreen(item, m)
     else if item.key = "globalprefs" then
         screen = createPreferencesScreen(m)
         screenName = "Preferences Main"

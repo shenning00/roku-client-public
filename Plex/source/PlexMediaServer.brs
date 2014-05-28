@@ -34,6 +34,8 @@ Function newPlexMediaServer(pmsUrl, pmsName, machineID) As Object
     pms.ConstructVideoItem = pmsConstructVideoItem
     pms.ClassicTranscodingVideoUrl = classicTranscodingVideoUrl
     pms.UniversalTranscodingVideoUrl = universalTranscodingVideoUrl
+    pms.ClassicTranscodingAudioUrl = genericTranscodingAudioUrl
+    pms.UniversalTranscodingAudioUrl = universalTranscodingAudioUrl
     pms.TranscodingVideoUrl = TranscodingVideoUrl
     pms.TranscodingAudioUrl = TranscodingAudioUrl
     pms.ConvertURLToLoopback = ConvertURLToLoopback
@@ -779,6 +781,18 @@ Function classicTranscodingVideoUrl(videoUrl As String, item As Object, httpHead
 End Function
 
 Function TranscodingAudioUrl(audioUrl As String, item As Object)
+    ' Just like with video, the universal transcoder doesn't support old school
+    ' XML with no Media elements. So we'll continue to use the generic
+    ' transcoder when necessary.
+
+    if item.HasMedia = true AND m.SupportsUniversalTranscoding then
+        return m.UniversalTranscodingAudioUrl(audioUrl, item)
+    else
+        return m.ClassicTranscodingAudioUrl(audioUrl, item)
+    end if
+End Function
+
+Function genericTranscodingAudioUrl(audioUrl As String, item As Object)
     if NOT m.SupportsAudioTranscoding then return invalid
 
     Debug("Constructing transcoding audio URL for " + audioUrl)
@@ -802,6 +816,29 @@ Function TranscodingAudioUrl(audioUrl As String, item As Object)
     finalUrl = m.serverUrl + path + query
     Debug("Final URL: " + finalUrl)
     return finalUrl
+End Function
+
+Function universalTranscodingAudioUrl(audioUrl As String, item As Object)
+    fullKey = m.ConvertURLToLoopback(FullUrl(m.serverUrl, item.sourceUrl, item.key))
+    versionArr = GetGlobal("rokuVersionArr", [0, 0])
+
+    builder = NewHttp(m.serverUrl + "/music/:/transcode/universal/start.mp3")
+
+    builder.AddParam("protocol", "http")
+    builder.AddParam("path", fullKey)
+    builder.AddParam("session", GetGlobal("rokuUniqueId"))
+    builder.AddParam("directPlay", "0")
+    builder.AddParam("directStream", "0")
+
+    ' We're cheating, but unlike everywhere else, don't include the Roku build. This
+    ' makes it easier for us to match against a firmware specific firmware.
+    builder.AddParam("X-Plex-Platform", "Roku")
+    builder.AddParam("X-Plex-Platform-Version", tostr(versionArr[0]) + "." + tostr(versionArr[1]))
+    builder.AddParam("X-Plex-Version", GetGlobal("appVersionStr"))
+    builder.AddParam("X-Plex-Product", "Plex for Roku")
+    builder.AddParam("X-Plex-Device", GetGlobal("rokuModel"))
+
+    return builder.Http.GetUrl()
 End Function
 
 Function ConvertURLToLoopback(url) As String

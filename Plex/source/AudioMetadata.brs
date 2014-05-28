@@ -106,9 +106,11 @@ Function newTrackMetadata(container, item, detailed=true) As Object
         codec = media@audioCodec
         key = part@key
         bitrate = validint(strtoi(firstOf(media@bitrate, "0")))
+        track.HasMedia = true
     else
         codec = invalid
         key = item@key
+        track.HasMedia = false
     end if
 
     if (codec = invalid OR codec = "") AND key <> invalid then

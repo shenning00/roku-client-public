@@ -5,7 +5,7 @@ Function AppManager()
         'obj.productCode = "PROD1" ' Sample product when sideloaded
         obj.productCode = "plexunlock"
 
-        ' The unlocked state of the app, one of: PlexPass, Exempt, Purchased, Trial, or Limited
+        ' The unlocked state of the app, one of: Plex Pass, Exempt, Purchased, Trial, or Limited
         obj.IsPlexPass = false
         obj.IsPurchased = (RegRead("purchased", "misc", "0") = "1")
         obj.IsAvailableForPurchase = false
@@ -79,7 +79,7 @@ End Function
 
 Sub managerResetState()
     if m.IsPlexPass then
-        m.State = "PlexPass"
+        m.State = "Plex Pass"
     else if m.IsExempt then
         m.State = "Exempt"
     else if m.IsPurchased then
@@ -112,7 +112,7 @@ Sub managerFetchProducts()
         m.PendingStore = store
         m.PendingRequestPurchased = true
     else
-        ' Rather than force these users to have a PlexPass, we'll exempt them.
+        ' Rather than force these users to have a Plex Pass, we'll exempt them.
         ' Among other things, this allows old users to continue to work, since
         ' even though they've theoretically been grandfathered we don't know it.
         m.IsExempt = true

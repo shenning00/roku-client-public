@@ -441,7 +441,7 @@ Sub vcShowHelpScreen()
     paragraphs.Push("To download and install your free Plex Media Server on your computer, visit https://plex.tv/downloads")
 
     if AppManager().State = "Trial" then
-        paragraphs.Push("Enjoy Plex for Roku free for 30 days, then unlock with a PlexPass subscription or a small one-time purchase.")
+        paragraphs.Push("Enjoy Plex for Roku free for 30 days, then unlock with a Plex Pass subscription or a small one-time purchase.")
     end if
 
     screen = createParagraphScreen(header, paragraphs, m)
@@ -458,10 +458,10 @@ Sub vcShowLimitedWelcome()
     addConnectButton = NOT MyPlexManager().IsSignedIn
 
     if AppManager().IsAvailableForPurchase then
-        paragraphs.Push("To continue using Plex, you can either buy the channel or connect a PlexPass-enabled account.")
+        paragraphs.Push("To continue using Plex, you can either buy the channel or connect a Plex Pass enabled account.")
         addPurchaseButton = true
     else
-        paragraphs.Push("To continue using Plex, you must connect a PlexPass-enabled account.")
+        paragraphs.Push("To continue using Plex, you must connect a Plex Pass enabled account.")
     end if
 
     screen = createParagraphScreen(header, paragraphs, m)

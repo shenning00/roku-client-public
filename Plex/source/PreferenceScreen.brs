@@ -350,24 +350,24 @@ Function prefsMainHandleMessage(msg) As Boolean
 
                 manager = AppManager()
                 if manager.State = "PlexPass" then
-                    dialog.Text = "Plex is fully unlocked since you're a PlexPass member."
+                    dialog.Text = "Plex is fully unlocked since you're a Plex Pass member."
                 else if manager.State = "Exempt" then
                     dialog.Text = "Plex is fully unlocked."
                 else if manager.State = "Purchased" then
                     dialog.Text = "Plex has been purchased and is fully unlocked."
                 else if manager.State = "Trial" then
                     if manager.IsAvailableForPurchase then
-                        dialog.Text = "Plex is currently in a trial period. To fully unlock the channel, you can purchase it or connect a PlexPass account."
+                        dialog.Text = "Plex is currently in a trial period. To fully unlock the channel, you can purchase it or connect a Plex Pass account."
                         dialog.SetButton("purchase", "Purchase the channel")
                     else
-                        dialog.Text = "Plex is currently in a trial period. To fully unlock the channel, you must connect a PlexPass account."
+                        dialog.Text = "Plex is currently in a trial period. To fully unlock the channel, you must connect a Plex Pass account."
                     end if
                 else if manager.State = "Limited" then
                     if manager.IsAvailableForPurchase then
-                        dialog.Text = "Your Plex trial has expired and playback is currently disabled. To fully unlock the channel, you can purchase it or connect a PlexPass account."
+                        dialog.Text = "Your Plex trial has expired and playback is currently disabled. To fully unlock the channel, you can purchase it or connect a Plex Pass account."
                         dialog.SetButton("purchase", "Purchase the channel")
                     else
-                        dialog.Text = "Your Plex trial has expired and playback is currently disabled. To fully unlock the channel, you must connect a PlexPass account."
+                        dialog.Text = "Your Plex trial has expired and playback is currently disabled. To fully unlock the channel, you must connect a Plex Pass account."
                     end if
                 end if
 

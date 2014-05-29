@@ -202,10 +202,6 @@ Sub foInitSorts(sortsArr)
     m.sortsHash = {}
     for each sort in m.sortsArr
         m.sortsHash[sort.key] = sort
-
-        if sort.defaultDir <> invalid AND m.currentSorts.IsEmpty() then
-            m.SetSort(sort.key, (sort.defaultDir = "asc"))
-        end if
     end for
 End Sub
 
@@ -300,6 +296,8 @@ Sub foReset()
 End Sub
 
 Function foGetUrl()
+    if NOT m.IsActive() then return invalid
+
     builder = NewHttp("all")
 
     ' Always add type, nice and easy
@@ -355,5 +353,17 @@ Function foIsActive()
     ' Reset the cursor in the hashes so we can see if they're empty. I know.
     m.currentFilters.Reset()
     m.currentSorts.Reset()
-    return (m.currentTypeIndex <> 0 OR m.currentFilters.IsNext() OR m.currentSorts.IsNext())
+
+    isSortSet = m.currentSorts.IsNext()
+    if isSortSet AND m.sortsHash <> invalid then
+        sortKey = m.currentSorts.Next()
+        sort = m.sortsHash[sortKey]
+        if sort <> invalid AND sort.defaultDir <> invalid then
+            isSortSet = ((sort.defaultDir = "asc") <> m.currentSorts[sortKey])
+        else
+            isSortSet = true
+        end if
+    end if
+
+    return (m.currentTypeIndex <> 0 OR m.currentFilters.IsNext() OR isSortSet)
 End Function

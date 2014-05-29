@@ -330,6 +330,7 @@ Sub loaderUpdateFilters(updateScreen)
 
         if updateScreen then
             m.Listener.Screen.SetListName(m.filteredRow, status.name)
+            m.Listener.SetVisibility(m.filteredRow, (newFilteredUrl <> invalid))
         end if
     end if
 End Sub

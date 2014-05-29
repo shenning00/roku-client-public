@@ -116,7 +116,8 @@ Function createPaginatedLoader(container, initialLoadSize, pageSize, item = inva
     ' should generally provide a smoother loading experience. This is the
     ' metadata that will be used for pending items.
     loader.LoadingItem = {
-        title: "Loading..."
+        Title: "Loading...",
+        ShortDescriptionLine1: "Loading..."
     }
 
     return loader

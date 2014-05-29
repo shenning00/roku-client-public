@@ -15,6 +15,7 @@ Function createPosterScreen(item, viewController) As Object
     obj.ShowList = posterShowContentList
     obj.HandleMessage = posterHandleMessage
     obj.SetListStyle = posterSetListStyle
+    obj.Activate = posterActivate
 
     obj.UseDefaultStyles = true
     obj.ListStyle = invalid
@@ -206,12 +207,24 @@ Sub posterOnDataLoaded(row As Integer, data As Object, startItem as Integer, cou
     end if
 
     if row = m.focusedList AND (finished OR startItem = 0 OR status.focusedIndex + 10 > status.lastUpdatedSize) then
-        m.ShowList(row)
-        status.lastUpdatedSize = status.content.Count()
+        if m.ViewController.IsActiveScreen(m) then
+            m.ShowList(row)
+            status.lastUpdatedSize = startItem + count
+        else
+            status.lastUpdatedSize = 0
+        end if
     end if
 
     ' Continue loading this row
     m.Loader.LoadMoreContent(row, 0)
+End Sub
+
+Sub posterActivate(priorScreen)
+    status = m.contentArray[m.focusedList]
+    if status.lastUpdatedSize <> status.content.Count() then
+        m.ShowList(m.focusedList)
+        status.lastUpdatedSize = status.content.Count()
+    end if
 End Sub
 
 Sub posterShowContentList(index)

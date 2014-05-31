@@ -212,6 +212,11 @@ Sub loaderOnUrlEvent(msg, requestContext)
         return
     end if
 
+    if NOT (m.Listener.rowVisibility[requestContext.row] = true) then
+        Debug("Ignore " + tostr(msg.GetResponseCode()) + " response from " + tostr(url) + " - row:" + tostr(requestContext.row) + " is hidden")
+        return
+    end if
+
     xml = CreateObject("roXMLElement")
     xml.Parse(msg.GetString())
 

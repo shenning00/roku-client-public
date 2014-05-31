@@ -508,9 +508,9 @@ End Function
 '* relative to the server URL
 Function FullUrl(serverUrl, sourceUrl, key) As String
     finalUrl = ""
-    if left(key, 4) = "http" OR left(key, 4) = "rtmp" then
+    if key <> invalid and (left(key, 4) = "http" OR left(key, 4) = "rtmp") then
         return key
-    else if left(key, 4) = "plex" then
+    else if key <> invalid and left(key, 4) = "plex" then
         url_start = Instr(1, key, "url=") + 4
         url_end = Instr(url_start, key, "&")
         url = Mid(key, url_start, url_end - url_start)

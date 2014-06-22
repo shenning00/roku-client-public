@@ -15,6 +15,9 @@ Function createGridScreen(viewController) As Object
     grid.SetDisplayMode("photo-fit")
     grid.SetGridStyle("mixed-aspect-ratio")
 
+    ' Required for remotes without a back button
+    grid.SetUpBehaviorAtTopRow("exit")
+
     ' Standard properties for all our Screen types
     screen.Screen = grid
     screen.DestroyAndRecreate = gridDestroyAndRecreate

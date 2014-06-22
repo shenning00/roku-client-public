@@ -8,6 +8,8 @@ Function createHomeScreen(viewController) As Object
     ' So create a regular grid screen and override/extend as necessary.
     obj = createGridScreen(viewController)
 
+    ' do not exit with the up button on the home screen
+    obj.screen.SetUpBehaviorAtTopRow("stop")
     obj.Screen.SetDisplayMode("photo-fit")
     obj.Loader = createHomeScreenDataLoader(obj)
 

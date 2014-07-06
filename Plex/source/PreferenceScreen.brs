@@ -422,6 +422,9 @@ Sub prefsMainActivate(priorScreen)
         m.checkMyPlexOnActivate = false
         if MyPlexManager().IsSignedIn then
             m.Changes["myplex"] = "connected"
+            ' refresh server list/tokens
+            home = GetViewController().home
+            if home <> invalid and home.loader <> invalid then home.loader.CreateMyPlexRequests(false)
         end if
         m.SetTitle(m.myPlexIndex, getCurrentMyPlexLabel())
     else if m.checkStatusOnActivate then

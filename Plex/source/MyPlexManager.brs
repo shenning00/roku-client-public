@@ -174,6 +174,8 @@ Sub mpDisconnect()
     m.IsSignedIn = false
     m.AuthToken = invalid
     RegDelete("AuthToken", "myplex")
+    ' remove all auth tokens for any server
+    RegDeleteSection("server_tokens")
 End Sub
 
 Function mpCheckTranscodeServer(showError=false As Boolean) As Boolean

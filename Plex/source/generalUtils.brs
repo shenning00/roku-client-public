@@ -47,6 +47,20 @@ Function RegDelete(key, section=invalid)
     sec.Flush()
 End Function
 
+sub RegDeleteSection(section)
+    Debug("*********** Deleting any key associated with section: " + tostr(section))
+    flush = false
+    sec = CreateObject("roRegistrySection", section)
+    keyList = sec.GetKeyList()
+    for each key in keyList
+        flush = true
+        value = sec.Read(key)
+        Debug("Delete: " + tostr(key) + " : " + tostr(value))
+        sec.Delete(key)
+        m.RegistryCache.Delete(key + section)
+    end for
+    if flush = true then sec.Flush()
+end sub
 
 '******************************************************
 'Convert anything to a string

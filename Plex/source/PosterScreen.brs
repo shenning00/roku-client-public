@@ -221,6 +221,8 @@ End Sub
 
 Sub posterActivate(priorScreen)
     status = m.contentArray[m.focusedList]
+    if status = invalid or status.lastUpdatedSize = invalid or status.content = invalid then return
+
     if status.lastUpdatedSize <> status.content.Count() then
         m.ShowList(m.focusedList)
         status.lastUpdatedSize = status.content.Count()

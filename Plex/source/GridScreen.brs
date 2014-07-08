@@ -502,17 +502,60 @@ Sub gridSetVisibility(row, visible)
     if m.timerRowVisibility = invalid then
         m.timerRowVisibility = createTimer()
         m.timerRowVisibility.Name = "gridRowVisibilityChange"
-        m.timerRowVisibility.SetDuration(1000)
+        m.timerRowVisibility.SetDuration(1500)
         m.ViewController.AddTimer(m.timerRowVisibility, m)
     end if
 
-    ' mark and set rowVisbility as true/false
-    m.rowVisibility[row] = visible
-    m.Screen.SetListVisible(row, visible)
+    Debug("gridSetVisibility:: Requested Row: " + tostr(row) + ", Selected Row: " + tostr(m.selectedrow))
+    ' Try and focus the last selected and visible row before hiding the
+    ' said row. Using 999 used to work, but that could cause an odd
+    ' phantom/endless scroll that continued to the end of all rows. This
+    ' will put the user back into the area they were in before hiding a row.
 
-    ' These are odd, but they seem to inhibit a crash (with the facade screen)
-    sleep(500) ' anything lower may intermittently crash
-    m.Screen.SetFocusedListItem(999, 0) 'invalid row so we don't change focus
+    ' mark row visibility before logic starts
+    m.rowVisibility[row] = visible
+
+    ' Focus another row if the current selection is the one we are hiding.
+    '  First try to focus the Previous visable row
+    '  Second: try to focus the Next visable row
+    focusRow = invalid
+    focusIndex = 0
+    if m.selectedRow = row then
+        ' try to focus on any valid/visable previous row
+        for index = row to 0 step -1
+            if m.rowVisibility[index] = true then
+                focusRow = index
+                exit for
+            end if
+        end for
+
+        ' try to focus on any valid/visable next row if we didn't match a previous
+        if focusRow = invalid then
+            for index = row to m.rowVisibility.count()-1 step 1
+                if m.rowVisibility[index] = true then
+                    focusRow = index
+                    exit for
+                end if
+            end for
+        end if
+    else if m.rowVisibility[m.selectedRow] = true then
+        ' use the current selected row if visible
+        focusRow = m.selectedRow
+        focusIndex = m.focusedIndex
+    end if
+
+    ' fallback - invalid row but the Roku will figure it out (hack)
+    if focusRow = invalid then focusRow = 999
+    Debug("setting focus on row: " +tostr(focusRow) + ", index: " + tostr(focusIndex))
+    m.Screen.SetFocusedListItem(focusRow, focusIndex)
+
+    ' Give the screen time to focus a visable row before hiding
+    ' anything lower may intermittently crash
+    sleep(250)
+
+    ' and set row visbility on the screen
+    m.Screen.SetListVisible(row, visible)
+    sleep(250)
 End Sub
 
 Sub gridSetFocusedItem(row, col)

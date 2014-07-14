@@ -334,6 +334,11 @@ Function prefsMainHandleMessage(msg) As Boolean
                     MyPlexManager().Disconnect()
                     m.Changes["myplex"] = "disconnected"
                     m.SetTitle(msg.GetIndex(), getCurrentMyPlexLabel())
+                    Debug("Disconnect Plex Account - Reset Plex Pass status")
+                    RegWrite("IsPlexPass", "0", "misc")
+                    mgr = AppManager()
+                    mgr.IsPlexPass = false
+                    mgr.ResetState()
                 else
                     m.checkMyPlexOnActivate = true
                     m.myPlexIndex = msg.GetIndex()

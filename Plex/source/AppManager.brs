@@ -6,7 +6,7 @@ Function AppManager()
         obj.productCode = "plexunlock"
 
         ' The unlocked state of the app, one of: Plex Pass, Exempt, Purchased, Trial, or Limited
-        obj.IsPlexPass = false
+        obj.IsPlexPass = (RegRead("IsPlexPass", "misc", "0") = "1")
         obj.IsPurchased = (RegRead("purchased", "misc", "0") = "1")
         obj.IsAvailableForPurchase = false
         obj.IsExempt = false

@@ -115,6 +115,11 @@ Sub mpProcessAccountResponse(event)
         m.AuthToken = xml@authenticationToken
         m.IsPlexPass = (xml.subscription <> invalid AND xml.subscription@active = "1")
 
+        if m.IsPlexPass then
+            RegWrite("IsPlexPass", "1", "misc")
+        else
+            RegWrite("IsPlexPass", "0", "misc")
+        end if
         Debug("Validated myPlex token, corresponds to " + tostr(m.Username))
         Debug("PlexPass: " + tostr(m.IsPlexPass))
 

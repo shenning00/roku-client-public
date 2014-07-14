@@ -329,6 +329,10 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
         return invalid
     end if
 
+    ' Create a facade screen for instant feedback.
+    facade = CreateObject("roGridScreen")
+    facade.show()
+
     ' Stop any background audio first
     AudioPlayer().Stop()
 
@@ -366,6 +370,7 @@ Function vcCreateVideoPlayer(metadata, seekValue=0, directPlayOptions=0, show=tr
 
     if show then screen.Show()
 
+    facade.close()
     return screen
 End Function
 

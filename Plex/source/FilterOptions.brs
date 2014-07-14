@@ -293,6 +293,11 @@ Sub foReset()
     m.currentTypeIndex = 0
     m.currentFilters.Clear()
     m.currentSorts.Clear()
+    if RegRead("remember_last_filter", "preferences", "1") = "1" then
+        RegDelete(m.cacheKey + "!sort", "filters")
+        RegDelete(m.cacheKey + "!filters", "filters")
+        RegDelete(m.cacheKey + "!type", "filters")
+    end if
 End Sub
 
 Function foGetUrl()

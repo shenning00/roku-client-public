@@ -220,6 +220,21 @@ Sub posterOnDataLoaded(row As Integer, data As Object, startItem as Integer, cou
 End Sub
 
 Sub posterActivate(priorScreen)
+    if m.ignoreOnActivate = true then
+        m.ignoreOnActivate = false
+        return
+    else if m.popOnActivate then
+        m.ViewController.PopScreen(m)
+        return
+    else if m.closeOnActivate then
+        if m.Screen <> invalid then
+            m.Screen.Close()
+        else
+            m.ViewController.PopScreen(m)
+        end if
+        return
+    end if
+
     status = m.contentArray[m.focusedList]
     if status = invalid or status.lastUpdatedSize = invalid or status.content = invalid then return
 

@@ -298,16 +298,26 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
     if data.Count() = 0 then
         if m.Screen <> invalid AND m.Loader.GetLoadStatus(row) = 2 then
             placeholder = m.Loader.GetPlaceholder(row, true)
-            if placeholder <> invalid then
-                m.UpdateThumbUrl(placeholder, row)
-                m.contentArray[row] = [placeholder]
-                m.Screen.SetContentList(row, m.contentArray[row])
-            else
+            if placeholder = invalid then
                 ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
-                Debug("Hiding row " + tostr(row) + " in OnDataLoaded")
-                m.SetVisibility(row, false)
-                m.Screen.SetContentList(row, data)
+                ' * Hiding rows cannot be safley DONE 100% of the time either. For now,
+                ' we cannot hide anything on the grid.
+
+                rowName = m.loader.names[row]
+                dummy = CreateObject("roAssociativeArray")
+                dummy.Key = invalid
+                dummy.ThumbUrl = invalid
+                dummy.ThumbProcessed = ""
+                dummy.paragraphs = []
+                dummy.paragraphs.Push("If you'll never use this row '" + rowName + "', you can reorder it under Preferences -> Section Display")
+                dummy.Title = rowName + " is Empty"
+                dummy.header = dummy.Title
+                placeholder = dummy
             end if
+
+            m.UpdateThumbUrl(placeholder, row)
+            m.contentArray[row] = [placeholder]
+            m.Screen.SetContentList(row, m.contentArray[row])
         end if
 
         if NOT m.hasData then

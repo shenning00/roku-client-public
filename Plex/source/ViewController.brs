@@ -219,6 +219,11 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen = createGridScreen(m)
         screen.Loader = createSearchLoader(item.searchTerm)
         screen.Loader.Listener = screen
+
+        ' Search screen is special. We do not refresh the search screen, but if we
+        ' need to, we'll have to create a refreshData routine in the searchLoader.
+        screen.ignoreOnActivate = true
+
         screenName = "Search Results"
     else if item.settings = "1"
         screen = createSettingsScreen(item, m)

@@ -28,6 +28,7 @@ Function createPosterScreen(item, viewController) As Object
     obj.contentArray = []
     obj.focusedList = 0
     obj.names = []
+    obj.rowVisibility = invalid
 
     if item.theme <> invalid AND NOT AudioPlayer().IsPlaying AND RegRead("theme_music", "preferences", "loop") <> "disabled" then
         AudioPlayer().PlayThemeMusic(item)

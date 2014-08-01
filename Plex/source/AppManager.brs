@@ -117,6 +117,7 @@ Sub managerFetchProducts()
         ' even though they've theoretically been grandfathered we don't know it.
         m.IsExempt = true
         Debug("Channel store isn't supported by firmware version")
+        m.ResetState()
     end if
 End Sub
 

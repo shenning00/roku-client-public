@@ -417,13 +417,8 @@ Sub vcShowReleaseNotes()
     header = GetGlobal("appName") + " has been updated to " + GetGlobal("appVersionStr")
     paragraphs = []
     paragraphs.Push("Changes in this version include:")
-    paragraphs.Push(" - Support for filtered browsing.")
-    paragraphs.Push(" - A new left-focused, mixed aspect ratio grid.")
-    paragraphs.Push(" - Channel activation status is remembered in case of connectivity loss.")
-    paragraphs.Push(" - Improved discoverability, particularly for iOS.")
-    paragraphs.Push(" - Fix soft subtitle display.")
-    paragraphs.Push(" - Fix various crashes.")
-    paragraphs.Push(" - Fix missing titles in iTunes channel.")
+    paragraphs.Push(" - Fix: iTunes channel crash.")
+    paragraphs.Push(" - Fix: search screen may close automatically.")
 
     screen = createParagraphScreen(header, paragraphs, m)
     screen.ScreenName = "Release Notes"

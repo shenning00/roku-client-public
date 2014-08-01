@@ -419,6 +419,7 @@ Sub vcShowReleaseNotes()
     paragraphs.Push("Changes in this version include:")
     paragraphs.Push(" - Fix: iTunes channel crash.")
     paragraphs.Push(" - Fix: search screen may close automatically.")
+    paragraphs.Push(" - Fix: channel status exemption for pre 5.1 firmware.")
 
     screen = createParagraphScreen(header, paragraphs, m)
     screen.ScreenName = "Release Notes"

@@ -24,6 +24,7 @@ Function createPosterScreen(item, viewController) As Object
     obj.Facade = invalid
 
     obj.OnDataLoaded = posterOnDataLoaded
+    obj.GetBlankThumbUrl = posterGetBlankThumbUrl
 
     obj.contentArray = []
     obj.focusedList = 0
@@ -257,6 +258,18 @@ Sub posterShowContentList(index)
         m.Screen.SetListDisplayMode(status.listDisplayMode)
     end if
 
+    ' Check the load status on a filtered row. If it's empty, we whould show an
+    ' empty placeholder to remove the "retrieving" screen.
+    if m.FilterMode and status.content.count() = 0 and status.lastUpdatedSize = 0 AND m.Loader.GetLoadStatus(m.focusedList) = 2 then
+        posterUrl = m.getBlankThumbUrl()
+        placeholder = CreateObject("roAssociativeArray")
+        placeholder.Key = invalid
+        placeholder.SDPosterUrl = posterUrl
+        placeholder.HDPosterUrl = posterUrl
+        placeholder.shortdescriptionline1 = "Empty"
+        m.Screen.SetContentList([placeholder])
+    end if
+
     Debug("Showing screen with " + tostr(status.content.Count()) + " elements")
     Debug("List style is " + tostr(status.listStyle) + ", " + tostr(status.listDisplayMode))
 
@@ -302,3 +315,17 @@ Sub posterSetListStyle(style, displayMode)
     m.UseDefaultStyles = false
 End Sub
 
+Sub posterGetBlankThumbUrl() as String
+
+    blankStyle = "square" ' default is square
+    if NOT(m.UseDefaultStyles = true) then
+        if m.ListStyle = "flat-episodic" then
+            blankStyle = "landscape"
+        else if m.ListStyle = "arced-portrait" then
+            blankStyle = "portrait"
+        end if
+    end if
+    thumbUrl = "file://pkg:/images/BlankPoster_" + blankStyle + ".png"
+
+    return thumbUrl
+End Sub

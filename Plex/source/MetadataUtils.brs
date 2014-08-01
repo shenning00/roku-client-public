@@ -98,9 +98,14 @@ Function createBaseMetadata(container, item, thumb=invalid) As Object
         metadata.HDPosterURL = server.TranscodedImage(container.sourceUrl, thumb, sizes.hdWidth, sizes.hdHeight)
     else
         metadata.ThumbUrl = invalid
-        metadata.ThumbProcessed = "portrait"
-        metadata.SDPosterURL = "file://pkg:/images/BlankPoster_portrait.png"
-        metadata.HDPosterURL = "file://pkg:/images/BlankPoster_portrait.png"
+        ' try to use a more appropriately sized blank thumb image
+        if instr(1, container.xml@identifier, "com.plexapp.plugins") = 0 then
+            metadata.ThumbProcessed = "portrait"
+        else
+            metadata.ThumbProcessed = "square"
+        end if
+        metadata.SDPosterURL = "file://pkg:/images/BlankPoster_" + metadata.ThumbProcessed + ".png"
+        metadata.HDPosterURL = "file://pkg:/images/BlankPoster_" + metadata.ThumbProcessed + ".png"
     end if
 
     metadata.sourceUrl = container.sourceUrl

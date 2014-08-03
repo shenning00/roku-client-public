@@ -1451,7 +1451,6 @@ Function createHomeScreenPrefsScreen(viewController) As Object
         { title: "All", EnumValue: "all" },
         { title: "Unwatched", EnumValue: "unwatched" },
         { title: "Watched", EnumValue: "watched" },
-        { title: "Sections", EnumValue: "" },
         { title: "Hidden", EnumValue: "hidden" }
     ]
     obj.Prefs["playlist_view_queue"] = {

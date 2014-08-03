@@ -429,9 +429,10 @@ Sub vcShowReleaseNotes()
     header = GetGlobal("appName") + " has been updated to " + GetGlobal("appVersionStr")
     paragraphs = []
     paragraphs.Push("Changes in this version include:")
+    paragraphs.Push(" - New: Grid style options (advanced preferences)")
     paragraphs.Push(" - Fix: iTunes channel crash.")
-    paragraphs.Push(" - Fix: search screen may close automatically.")
-    paragraphs.Push(" - Fix: channel status exemption for pre 5.1 firmware.")
+    paragraphs.Push(" - Fix: Search screen may close automatically.")
+    paragraphs.Push(" - Fix: Channel status exemption for pre 5.1 firmware.")
 
     screen = createParagraphScreen(header, paragraphs, m)
     screen.ScreenName = "Release Notes"

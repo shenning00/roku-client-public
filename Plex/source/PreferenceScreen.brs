@@ -660,11 +660,23 @@ Function createAdvancedPrefsScreen(viewController) As Object
         default: "1"
     }
 
+    ' Analytics (opt-out)
+    values = [
+        { title: "Left", EnumValue: "mixed-aspect-ratio", ShortDescriptionLine2: "Center focus supporting mixed aspect rows" },
+        { title: "Center", EnumValue: "flat-portrait" ,ShortDescriptionLine2: "Standard center focus"}
+    ]
+    obj.Prefs["gridStyle"] = {
+        values: values,
+        heading: "Choose your Grid Style ( * requires a channel restart )"
+        default: "Left"
+    }
+
     versionArr = GetGlobalAA().Lookup("rokuVersionArr")
     major = versionArr[0]
 
     obj.Screen.SetHeader("Advanced preferences don't usually need to be changed")
 
+    obj.AddItem({title: "Grid Style"}, "gridStyle", obj.GetEnumValue("gridStyle"))
     obj.AddItem({title: "Transcoder"}, "transcoder_version", obj.GetEnumValue("transcoder_version"))
     obj.AddItem({title: "Continuous Play"}, "continuous_play", obj.GetEnumValue("continuous_play"))
     obj.AddItem({title: "H.264"}, "level", obj.GetEnumValue("level"))

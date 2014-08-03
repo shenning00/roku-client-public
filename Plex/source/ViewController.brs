@@ -142,7 +142,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screenName = "Preplay " + contentType
     else if contentType = "series" then
         if RegRead("use_grid_for_series", "preferences", "") <> "" then
-            screen = createGridScreenForItem(item, m, "landscape")
+            screen = createGridScreenForItem(item, m, "flat-16x9")
             screenName = "Series Grid"
         else
             screen = createPosterScreen(item, m)
@@ -172,10 +172,22 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
             RegWrite("lastMachineID", item.server.machineID)
             RegWrite("lastSectionKey", item.key)
         end if
-        screen = createGridScreenForItem(item, m)
+        ' we have some options to display a different style here per item type.
+        ' I am not sure the best fit, but music and photos seem to look better,
+        ' imho, in flat-landscape mode (but we need a focus border asset for
+        ' that). The gridscreen will ignore this if one has selected
+        ' mixed-aspect-ratio
+        itemType = tostr(item.type)
+        if itemType = "artist" or itemType = "photo" then
+            ' style = "flat-landscape" ' needs border asset
+            style = "flat-movie"
+        else
+            style = "flat-portrait"
+        end if
+        screen = createGridScreenForItem(item, m, style)
         screenName = "Section: " + tostr(item.type)
     else if contentType = "playlists" then
-        screen = createGridScreenForItem(item, m, "landscape")
+        screen = createGridScreenForItem(item, m, "flat-16x9")
         screenName = "Playlist Grid"
     else if contentType = "photo" then
         if right(item.key, 8) = "children" then
@@ -192,7 +204,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen = createSearchScreen(item, m)
         screenName = "Search"
     else if item.key = "/system/appstore" then
-        screen = createGridScreenForItem(item, m)
+        screen = createGridScreenForItem(item, m, "flat-square")
         screenName = "Channel Directory"
     else if viewGroup = "Store:Info" then
         dialog = createPopupMenu(item)
@@ -207,7 +219,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screenName = "Filters"
     else if item.key = "/channels/all" then
         ' Special case for all channels to force it into a special grid view
-        screen = createGridScreen(m)
+        screen = createGridScreen(m, "flat-square")
         names = ["Video Channels", "Music Channels", "Photo Channels"]
         keys = ["/video", "/music", "/photos"]
         fakeContainer = createFakePlexContainer(item.server, names, keys)
@@ -216,7 +228,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen.Loader.Port = screen.Port
         screenName = "All Channels"
     else if item.searchTerm <> invalid AND item.server = invalid then
-        screen = createGridScreen(m)
+        screen = createGridScreen(m, "flat-square")
         screen.Loader = createSearchLoader(item.searchTerm)
         screen.Loader.Listener = screen
 

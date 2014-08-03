@@ -298,6 +298,13 @@ Sub initTheme()
 
     app.SetTheme(theme)
 
+    ' clear any focus border theme attribute. These seemt to be left over if
+    ' this has been set, even after a exit ( the first time )
+    app.ClearThemeAttribute("GridScreenFocusBorderHD")
+    app.ClearThemeAttribute("GridScreenFocusBorderSD")
+    app.ClearThemeAttribute("GridScreenBorderOffsetHD")
+    app.ClearThemeAttribute("GridScreenBorderOffsetSD")
+
 End Sub
 
 Function SupportsSurroundSound(transcoding=false, refresh=false) As Boolean

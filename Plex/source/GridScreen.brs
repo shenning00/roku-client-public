@@ -2,10 +2,27 @@
 '* A grid screen backed by XML from a PMS.
 '*
 
-Function createGridScreen(viewController) As Object
+Function createGridScreen(viewController, gridStyle=invalid) As Object
     Debug("######## Creating Grid Screen ########")
 
     screen = CreateObject("roAssociativeArray")
+
+    ' We allow the user to change between a mixed-aspect-grid (left focus) and
+    ' other styles in the Advanced settings
+    regGridStyle = RegRead("gridStyle", "preferences", "mixed-aspect-ratio")
+
+    ' ignore the style request if "mixed-aspect-ratio" (left focus) is prefered
+    if regGridStyle = "mixed-aspect-ratio" then
+        gridStyle = regGridStyle
+    else
+        ' use the reg preference grid style -or- allow an override
+        if gridStyle = invalid then gridStyle = regGridStyle
+        ' update the focus border styles
+        setGridTheme(gridStyle)
+    end if
+
+    ' allow us to hide rows if one doesn't choose a mixed-aspect-ration grid
+    screen.isMixedAspect = (gridStyle = "mixed-aspect-ratio")
 
     initBaseScreen(screen, viewController)
 
@@ -13,7 +30,7 @@ Function createGridScreen(viewController) As Object
     grid.SetMessagePort(screen.Port)
 
     grid.SetDisplayMode("photo-fit")
-    grid.SetGridStyle("mixed-aspect-ratio")
+    grid.SetGridStyle(gridStyle)
 
     ' Required for remotes without a back button
     grid.SetUpBehaviorAtTopRow("exit")
@@ -55,8 +72,8 @@ Function createGridScreen(viewController) As Object
 End Function
 
 '* Convenience method to create a grid screen with a loader for the specified item
-Function createGridScreenForItem(item, viewController, style="square") As Object
-    obj = createGridScreen(viewController)
+Function createGridScreenForItem(item, viewController, style=invalid) As Object
+    obj = createGridScreen(viewController, style)
 
     obj.Item = item
 
@@ -139,7 +156,13 @@ Function gridInitializeRows(clear=true)
         m.lastUpdatedSize[row] = m.contentArray[row].Count()
         m.Screen.SetContentList(row, m.contentArray[row])
         if m.lastUpdatedSize[row] = 0 AND m.Loader.GetLoadStatus(row) = 2 then
-            placeholder = m.Loader.GetPlaceholder(row, true)
+            ' we need a placehoder for mixed-aspect-ratio grids
+            if m.isMixedAspect = true then
+                placeholder = m.Loader.GetPlaceholder(row, true)
+            else
+                placeholder = invalid
+            end if
+
             if placeholder <> invalid then
                 m.contentArray[row] = [placeholder]
                 m.Screen.SetContentList(row, m.contentArray[row])
@@ -297,27 +320,33 @@ Sub gridOnDataLoaded(row As Integer, data As Object, startItem As Integer, count
     ' Don't bother showing empty rows
     if data.Count() = 0 then
         if m.Screen <> invalid AND m.Loader.GetLoadStatus(row) = 2 then
-            placeholder = m.Loader.GetPlaceholder(row, true)
-            if placeholder = invalid then
-                ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
-                ' * Hiding rows cannot be safley DONE 100% of the time either. For now,
-                ' we cannot hide anything on the grid.
+            ' non mixed-aspect-ratio? then we HIDE it!
+            if m.isMixedAspect = false then
+                m.SetVisibility(row, false)
+                m.Screen.SetContentList(row, data)
+            else
+                placeholder = m.Loader.GetPlaceholder(row, true)
+                if placeholder = invalid then
+                    ' CAUTION: This cannot be safely undone on a mixed-aspect-ratio grid!
+                    ' * Hiding rows cannot be safley DONE 100% of the time either. For now,
+                    ' we cannot hide anything on the grid.
 
-                rowName = m.loader.names[row]
-                dummy = CreateObject("roAssociativeArray")
-                dummy.Key = invalid
-                dummy.ThumbUrl = invalid
-                dummy.ThumbProcessed = ""
-                dummy.paragraphs = []
-                dummy.paragraphs.Push("If you'll never use this row '" + rowName + "', you can reorder it under Preferences -> Section Display")
-                dummy.Title = rowName + " is Empty"
-                dummy.header = dummy.Title
-                placeholder = dummy
+                    rowName = m.loader.names[row]
+                    dummy = CreateObject("roAssociativeArray")
+                    dummy.Key = invalid
+                    dummy.ThumbUrl = invalid
+                    dummy.ThumbProcessed = ""
+                    dummy.paragraphs = []
+                    dummy.paragraphs.Push("If you'll never use this row '" + rowName + "', you can reorder it under Preferences -> Section Display")
+                    dummy.Title = rowName + " is Empty"
+                    dummy.header = dummy.Title
+                    placeholder = dummy
+                end if
+
+                m.UpdateThumbUrl(placeholder, row)
+                m.contentArray[row] = [placeholder]
+                m.Screen.SetContentList(row, m.contentArray[row])
             end if
-
-            m.UpdateThumbUrl(placeholder, row)
-            m.contentArray[row] = [placeholder]
-            m.Screen.SetContentList(row, m.contentArray[row])
         end if
 
         if NOT m.hasData then
@@ -493,8 +522,11 @@ End Sub
 Sub gridSetVisibility(row, visible)
     if m.rowVisibility[row] = visible then return
 
-    ' Ignore the intrusive fix if rowStyles are invalid
-    if m.rowStyles = invalid then
+    Debug("gridSetVisibility:: row:" + tostr(row) + ", visible:" + tostr(visible) + ", isMixedAspect: " + tostr(m.isMixedAspect))
+
+    ' Ignore the intrusive fix if rowStyles are invalid. It's also safe to
+    ' change visibilty on a NON mixed-aspect-ratio grid
+    if m.rowStyles = invalid or m.isMixedAspect = false then
         m.rowVisibility[row] = visible
         m.Screen.SetListVisible(row, visible)
         return
@@ -611,4 +643,30 @@ Sub gridUpdateThumbUrl(item, row)
             item.HDPosterURL = "file://pkg:/images/BlankPoster_" + curRowStyle + ".png"
         end if
     end if
+End Sub
+
+Sub setGridTheme(style as String)
+    ' This has to be done before the CreateObject call. Once the grid has
+    ' been created you can change its style, but you can't change its theme.
+
+    app = CreateObject("roAppManager")
+    if style = "mixed-aspect-ratio" then
+        ' just in case someone runs this routine
+        return
+    else if style = "flat-square" then
+        app.SetThemeAttribute("GridScreenFocusBorderHD", "pkg:/images/border-square-hd.png")
+        app.SetThemeAttribute("GridScreenFocusBorderSD", "pkg:/images/border-square-sd.png")
+    else if style = "flat-16x9" then
+        app.SetThemeAttribute("GridScreenFocusBorderHD", "pkg:/images/border-episode-hd.png")
+        app.SetThemeAttribute("GridScreenFocusBorderSD", "pkg:/images/border-episode-sd.png")
+    else if style = "flat-movie" then
+        app.SetThemeAttribute("GridScreenFocusBorderHD", "pkg:/images/border-movie-hd.png")
+        app.SetThemeAttribute("GridScreenFocusBorderSD", "pkg:/images/border-movie-sd.png")
+    else if style = "flat-portrait" then
+        app.SetThemeAttribute("GridScreenFocusBorderHD", "pkg:/images/border-portrait-hd.png")
+        app.SetThemeAttribute("GridScreenFocusBorderSD", "pkg:/images/border-portrait-sd.png")
+    end if
+    ' The actual focus border is set by the grid based on the style
+    app.SetThemeAttribute("GridScreenBorderOffsetHD","(-9,-9)")
+    app.SetThemeAttribute("GridScreenBorderOffsetSD","(-9,-9)")
 End Sub

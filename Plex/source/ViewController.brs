@@ -142,7 +142,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screenName = "Preplay " + contentType
     else if contentType = "series" then
         if RegRead("use_grid_for_series", "preferences", "") <> "" then
-            screen = createGridScreenForItem(item, m, "flat-16x9")
+            screen = createGridScreenForItem(item, m, "landscape")
             screenName = "Series Grid"
         else
             screen = createPosterScreen(item, m)
@@ -187,7 +187,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen = createGridScreenForItem(item, m, style)
         screenName = "Section: " + tostr(item.type)
     else if contentType = "playlists" then
-        screen = createGridScreenForItem(item, m, "flat-16x9")
+        screen = createGridScreenForItem(item, m, "landscape")
         screenName = "Playlist Grid"
     else if contentType = "photo" then
         if right(item.key, 8) = "children" then

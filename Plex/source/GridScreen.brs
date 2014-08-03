@@ -17,6 +17,8 @@ Function createGridScreen(viewController, gridStyle=invalid) As Object
     else
         ' use the reg preference grid style -or- allow an override
         if gridStyle = invalid then gridStyle = regGridStyle
+        ' backwards compatibility with mixed-aspect-ratio
+        if gridStyle = "landscape" then gridStyle = "flat-16x9"
         ' update the focus border styles
         setGridTheme(gridStyle)
     end if

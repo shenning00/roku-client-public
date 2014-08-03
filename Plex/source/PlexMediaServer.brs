@@ -881,7 +881,7 @@ Function Capabilities(recompute=false) As String
     protocols = "protocols=http-live-streaming,http-mp4-streaming,http-mp4-video,http-mp4-video-720p,http-streaming-video,http-streaming-video-720p"
     level = RegRead("level", "preferences", "41")
     'do checks to see if 5.1 is supported, else use stereo
-    audio = "aac"
+    audio = "aac{channels:2}"
     versionArr = GetGlobal("rokuVersionArr", [0])
     major = versionArr[0]
 

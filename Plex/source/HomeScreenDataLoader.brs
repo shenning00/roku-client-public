@@ -238,6 +238,11 @@ Sub homeCreatePlaylistRequests(name, title, description, row, startRequests)
     if row < 0 then return
     view = RegRead("playlist_view_" + name, "preferences", "unwatched")
 
+    if view = "hidden" and m.isMixedAspect = false then
+        m.Listener.OnDataLoaded(row, [], 0, 0, true)
+        return
+    end if
+
     ' Unwatched recommended items
     currentItems = CreateObject("roAssociativeArray")
     currentItems.server = MyPlexManager()

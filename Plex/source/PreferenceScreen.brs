@@ -662,7 +662,7 @@ Function createAdvancedPrefsScreen(viewController) As Object
 
     ' Analytics (opt-out)
     values = [
-        { title: "Left", EnumValue: "mixed-aspect-ratio", ShortDescriptionLine2: "Center focus supporting mixed aspect rows" },
+        { title: "Left", EnumValue: "mixed-aspect-ratio", ShortDescriptionLine2: "Left focus supporting mixed aspect rows" },
         { title: "Center", EnumValue: "flat-portrait" ,ShortDescriptionLine2: "Standard center focus"}
     ]
     obj.Prefs["gridStyle"] = {

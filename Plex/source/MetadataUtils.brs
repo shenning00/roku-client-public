@@ -99,7 +99,7 @@ Function createBaseMetadata(container, item, thumb=invalid) As Object
     else
         metadata.ThumbUrl = invalid
         ' try to use a more appropriately sized blank thumb image
-        if instr(1, container.xml@identifier, "com.plexapp.plugins") = 0 then
+        if instr(1, firstof(container.xml@identifier,""), "com.plexapp.plugins") = 0 then
             metadata.ThumbProcessed = "portrait"
         else
             metadata.ThumbProcessed = "square"

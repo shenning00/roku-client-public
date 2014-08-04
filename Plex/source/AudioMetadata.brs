@@ -147,7 +147,7 @@ Function newTrackMetadata(container, item, detailed=true) As Object
 
         ' If we're direct playing a FLAC, bitrate can be required, and supposedly
         ' this is the only way to do it.
-        if bitrate > 0 then
+        if bitrate > 0 AND codec = "flac" then
             track.Streams = [{ url: track.Url, bitrate: bitrate }]
         end if
     else

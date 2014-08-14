@@ -79,7 +79,7 @@ Function createGridScreenForItem(item, viewController, style=invalid) As Object
 
     ' if the grid is mixed, the default style will be square. This can be
     ' overridden with m.StyleOverrides or in the PaginatedDataLoader
-    if obj.isMixedAspect then style = "square"
+    if obj.isMixedAspect = true then style = "square"
 
     obj.Item = item
 

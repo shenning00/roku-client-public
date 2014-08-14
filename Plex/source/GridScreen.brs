@@ -77,6 +77,10 @@ End Function
 Function createGridScreenForItem(item, viewController, style=invalid) As Object
     obj = createGridScreen(viewController, style)
 
+    ' if the grid is mixed, the default style will be square. This can be
+    ' overridden with m.StyleOverrides or in the PaginatedDataLoader
+    if obj.isMixedAspect then style = "square"
+
     obj.Item = item
 
     container = createPlexContainerForUrl(item.server, item.sourceUrl, item.key)

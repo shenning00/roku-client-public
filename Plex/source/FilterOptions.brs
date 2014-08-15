@@ -233,13 +233,15 @@ Function foGetFiltersLabel()
     first = true
 
     for each key in m.currentFilters
-        if first then
-            first = false
-        else
-            label = label + ", "
+        if m.filtersHash[key] <> invalid then
+            if first then
+                first = false
+            else
+                label = label + ", "
+            end if
+            obj = m.filtersHash[key]
+            label = label + firstOf(obj.OrigTitle, obj.Title)
         end if
-        obj = m.filtersHash[key]
-        label = label + firstOf(obj.OrigTitle, obj.Title)
     end for
 
     if label = "" then label = "None"
@@ -267,13 +269,16 @@ Function foGetSortsLabel()
     first = true
 
     for each key in m.currentSorts
-        if first then
-            first = false
-        else
-            label = label + ", "
+        if m.sortsHash[key] <> invalid then
+            if first then
+                first = false
+            else
+                label = label + ", "
+            end if
+            obj = m.sortsHash[key]
+
+            label = label + firstOf(obj.OrigTitle, obj.Title)
         end if
-        obj = m.sortsHash[key]
-        label = label + firstOf(obj.OrigTitle, obj.Title)
     end for
 
     if label = "" then label = "Default"

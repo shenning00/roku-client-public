@@ -241,6 +241,9 @@ Function foGetFiltersLabel()
             end if
             obj = m.filtersHash[key]
             label = label + firstOf(obj.OrigTitle, obj.Title)
+        else
+            m.Reset()
+            return "None"
         end if
     end for
 
@@ -278,6 +281,9 @@ Function foGetSortsLabel()
             obj = m.sortsHash[key]
 
             label = label + firstOf(obj.OrigTitle, obj.Title)
+        else
+            m.reset()
+            return "Default"
         end if
     end for
 

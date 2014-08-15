@@ -178,13 +178,12 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         ' that). The gridscreen will ignore this if one has selected
         ' mixed-aspect-ratio
         itemType = tostr(item.type)
+        nonMixStyle = invalid
         if itemType = "artist" or itemType = "photo" then
             ' style = "flat-landscape" ' needs border asset
-            style = "flat-movie"
-        else
-            style = "flat-portrait"
+            nonMixStyle = "flat-movie"
         end if
-        screen = createGridScreenForItem(item, m, style)
+        screen = createGridScreenForItem(item, m, "portrait", nonMixStyle)
         screenName = "Section: " + tostr(item.type)
     else if contentType = "playlists" then
         screen = createGridScreenForItem(item, m, "landscape")
@@ -204,7 +203,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen = createSearchScreen(item, m)
         screenName = "Search"
     else if item.key = "/system/appstore" then
-        screen = createGridScreenForItem(item, m, "flat-square")
+        screen = createGridScreenForItem(item, m, "square")
         screenName = "Channel Directory"
     else if viewGroup = "Store:Info" then
         dialog = createPopupMenu(item)
@@ -219,7 +218,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screenName = "Filters"
     else if item.key = "/channels/all" then
         ' Special case for all channels to force it into a special grid view
-        screen = createGridScreen(m, "flat-square")
+        screen = createGridScreen(m, "square")
         names = ["Video Channels", "Music Channels", "Photo Channels"]
         keys = ["/video", "/music", "/photos"]
         fakeContainer = createFakePlexContainer(item.server, names, keys)
@@ -228,7 +227,7 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
         screen.Loader.Port = screen.Port
         screenName = "All Channels"
     else if item.searchTerm <> invalid AND item.server = invalid then
-        screen = createGridScreen(m, "flat-square")
+        screen = createGridScreen(m, "square")
         screen.Loader = createSearchLoader(item.searchTerm)
         screen.Loader.Listener = screen
 

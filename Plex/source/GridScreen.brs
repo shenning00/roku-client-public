@@ -2,7 +2,7 @@
 '* A grid screen backed by XML from a PMS.
 '*
 
-Function createGridScreen(viewController, gridStyle=invalid) As Object
+Function createGridScreen(viewController, gridStyle=invalid, nonMixGridStyle=invalid) As Object
     Debug("######## Creating Grid Screen ########")
 
     screen = CreateObject("roAssociativeArray")
@@ -16,9 +16,21 @@ Function createGridScreen(viewController, gridStyle=invalid) As Object
         gridStyle = regGridStyle
     else
         ' use the reg preference grid style -or- allow an override
-        if gridStyle = invalid then gridStyle = regGridStyle
+        if nonMixGridStyle <> invalid then
+            gridStyle = nonMixGridStyle
+        else if gridStyle = invalid then
+            gridStyle = regGridStyle
+        end if
+
         ' backwards compatibility with mixed-aspect-ratio
-        if gridStyle = "landscape" then gridStyle = "flat-16x9"
+        if gridStyle = "landscape" then
+            gridStyle = "flat-16x9"
+        else if gridStyle = "portrait" then
+            gridStyle = "flat-portrait"
+        else if gridStyle = "square" then
+            gridStyle = "flat-square"
+        end if
+
         ' update the focus border styles
         setGridTheme(gridStyle)
     end if
@@ -74,12 +86,12 @@ Function createGridScreen(viewController, gridStyle=invalid) As Object
 End Function
 
 '* Convenience method to create a grid screen with a loader for the specified item
-Function createGridScreenForItem(item, viewController, style=invalid) As Object
-    obj = createGridScreen(viewController, style)
+Function createGridScreenForItem(item, viewController, style="square", nonMixStyle=invalid) As Object
+    obj = createGridScreen(viewController, style, nonMixStyle)
 
-    ' if the grid is mixed, the default style will be square. This can be
-    ' overridden with m.StyleOverrides or in the PaginatedDataLoader
-    if obj.isMixedAspect = true then style = "square"
+    ' We need to validate the grid style if it's mixed. We cannot allow any
+    ' other style than square, portrait or landscape as it reboots the roku.
+    if obj.isMixedAspect = true and style <> "portrait" and style <> "square" and style <> "landscape" then style = "square"
 
     obj.Item = item
 

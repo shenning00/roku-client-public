@@ -429,6 +429,7 @@ Sub vcShowReleaseNotes()
     paragraphs = []
     paragraphs.Push("Changes in this version include:")
     paragraphs.Push(" - New: Grid style options (advanced preferences)")
+    paragraphs.Push(" - Fix: Cloud Sync section crash")
     paragraphs.Push(" - Fix: Unnecessary transcoding of files with multiple audio streams")
     paragraphs.Push(" - Fix: Direct play of m4a/AAC music")
     paragraphs.Push(" - Fix: iTunes channel crash")

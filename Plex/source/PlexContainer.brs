@@ -122,6 +122,8 @@ Sub containerParseXml()
             metadata = newPhotoMetadata(m, n, m.ParseDetails)
         else if n.GetName() = "Setting" then
             metadata = newSettingMetadata(m, n)
+        else if nodeType = "playlist" then
+            metadata = newPlaylistsMetadata(m, n)
         else
             metadata = newDirectoryMetadata(m, n)
         end if

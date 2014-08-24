@@ -98,6 +98,7 @@ Sub homeSetupRows()
         { title: "Library Sections", key: "sections", style: "square", visibility_key: "row_visibility_sections", account_required: false },
         { title: "On Deck", key: "on_deck", style: "portrait", visibility_key: "row_visibility_ondeck", account_required: false },
         { title: "Recently Added", key: "recently_added", style: "portrait", visibility_key: "row_visibility_recentlyadded", account_required: false },
+        { title: "Playlists", key: "playlists", style: "square", visibility_key: "row_visibility_playlists", account_required: false },
         { title: "Queue", key: "queue", style: "landscape", visibility_key: "playlist_view_queue", account_required: true },
         { title: "Recommendations", key: "recommendations", style: "landscape", visibility_key: "playlist_view_recommendations", account_required: true },
         { title: "Shared Library Sections", key: "shared_sections", style: "square", visibility_key: "row_visibility_shared_sections", account_required: true },
@@ -206,6 +207,14 @@ Sub homeCreateServerRequests(server As Object, startRequests As Boolean)
         recents.key = "/library/recentlyAdded"
         recents.requestType = "media"
         m.AddOrStartRequest(recents, m.RowIndexes["recently_added"], startRequests)
+    end if
+    ' Request playlists
+    if m.RowIndexes["playlists"] >= 0 then
+        playlists = CreateObject("roAssociativeArray")
+        playlists.server = server
+        playlists.key = "/playlists"
+        playlists.requestType = "media"
+        m.AddOrStartRequest(playlists, m.RowIndexes["playlists"], startRequests)
     end if
 End Sub
 
@@ -718,6 +727,10 @@ Function homeGetPlaceholder(row, empty)
         dummy.paragraphs.Push("Either you don't have a Plex Media Server running or it couldn't be reached.")
         dummy.paragraphs.Push("Plex Media Server can be installed on your computer from https://plex.tv/downloads")
         dummy.paragraphs.Push("If you'll never use Channels, you can hide this row under Preferences -> Home Screen")
+    else if row = m.RowIndexes["playlists"] then
+        dummy.Title = "No Playlists"
+        dummy.header = dummy.Title
+        dummy.paragraphs.Push("No playlists found.")
     else if row = m.RowIndexes["on_deck"] then
         dummy.Title = "No On Deck Items"
         dummy.header = dummy.Title

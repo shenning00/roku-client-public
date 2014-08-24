@@ -240,7 +240,9 @@ Sub posterActivate(priorScreen)
     status = m.contentArray[m.focusedList]
     if status = invalid or status.lastUpdatedSize = invalid or status.content = invalid then return
 
-    if status.lastUpdatedSize <> status.content.Count() then
+    'SAH - still need some work here for 'shuffle'
+    if status.lastUpdatedSize <> status.content.Count() or status.forcusedIndex <> priorScreen.CurIndex then
+        status.focusedIndex = priorScreen.CurIndex
         m.ShowList(m.focusedList)
         status.lastUpdatedSize = status.content.Count()
     end if

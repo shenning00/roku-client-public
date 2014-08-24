@@ -187,7 +187,9 @@ Function audioHandleMessage(msg) As Boolean
                     end if
                 end if
 
-                dialog.SetButton("rate", "_rate_")
+                if m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.library" then
+                    dialog.SetButton("rate", "_rate_")
+                end if
                 if m.metadata.server.AllowsMediaDeletion AND m.metadata.mediaContainerIdentifier = "com.plexapp.plugins.library" then
                     dialog.SetButton("delete", "Delete permanently")
                 end if
@@ -300,7 +302,7 @@ Function audioDialogHandleButton(command, data) As Boolean
         Debug("audioHandleMessage:: Rate audio for key " + tostr(obj.metadata.ratingKey))
         rateValue% = (data /10)
         obj.metadata.UserRating = data
-        if obj.metadata.ratingKey <> invalid then
+        if obj.metadata.ratingKey <> invalid and obj.metadata.mediaContainerIdentifier <> invalid then
             obj.Item.server.Rate(obj.metadata.ratingKey, obj.metadata.mediaContainerIdentifier, rateValue%.ToStr())
         end if
     else if command = "close" then

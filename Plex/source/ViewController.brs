@@ -188,6 +188,10 @@ Function vcCreateScreenForItem(context, contextIndex, breadcrumbs, show=true) As
     else if contentType = "playlists" then
         screen = createGridScreenForItem(item, m, "landscape")
         screenName = "Playlist Grid"
+    else if contentType = "playlist" then
+        screen = createPosterScreen(item, m)
+        screen.SetListStyle("flat-episodic", "zoom-to-fill")
+        screenName = "Playlist Grid"
     else if contentType = "photo" then
         if right(item.key, 8) = "children" then
             screen = createPosterScreen(item, m)
